@@ -1,13 +1,11 @@
 package com.fyodorwolf.studybudy;
 
-import java.io.IOException;
 import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
