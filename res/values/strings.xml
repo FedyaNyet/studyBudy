@@ -5,5 +5,6 @@
     <string name="action_settings">Settings</string>
     <string name="title_section1">List</string>
     <string name="title_section2">Review</string>
+    <string name="searchString">Search products..</string>
 
 </resources>

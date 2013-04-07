@@ -6,7 +6,6 @@ import android.app.ActionBar;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -76,23 +75,21 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                             .setTabListener(this));
         }
         Context myContext = this.getApplicationContext();
-        DatabaseHelper dba = new DatabaseHelper(myContext);
-        SQLiteDatabase myDB = dba.getReadableDatabase();
-		Cursor c = myDB.query("Section", new String[] {"_id", "name"}, null, null, null, null, null);
-		Log.d(STORAGE_SERVICE, "_id, name");
+        
+        DatabaseAdapter mDbHelper = new DatabaseAdapter(myContext);        
+        mDbHelper.createDatabase();      
+        mDbHelper.open();
+
+        Cursor c = mDbHelper.getSections();
+
+        mDbHelper.close();
+        Log.d(STORAGE_SERVICE, "_id, name");
 		if(c.moveToFirst()){
 			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
 		} 
 		while (c.moveToNext()){
 			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
 		}
-		dba.close();
-//
-//	 	Cursor sections = myDbHelper.getReadableDatabase().query("Section", null, null, null, null, null, null);
-//	 	while(sections.moveToNext()){
-//	 	    String name = sections.getString(sections.getColumnIndexOrThrow("name"));
-//	 	    System.out.println(name);
-//	 	}
     }
 
     @Override
@@ -132,11 +129,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             // getItem is called to instantiate the fragment for the given page.
             // Return a DummySectionFragment (defined as a static inner class
             // below) with the page number as its lone argument.
-            Fragment fragment = new DummySectionFragment();
-            Bundle args = new Bundle();
-            args.putInt(DummySectionFragment.ARG_SECTION_NUMBER, position + 1);
-            fragment.setArguments(args);
-            return fragment;
+            if(position == 0){
+                Fragment listView = new ListView();
+                return listView;
+            }else{
+                Fragment cardView = new CardView();
+                Bundle args = new Bundle();
+                args.putInt("ARG_SECTION_NUMBER", position+1);
+                cardView.setArguments(args);
+                return cardView;
+            }
         }
 
         @Override
@@ -162,20 +164,36 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
      * A dummy fragment representing a section of the app, but that simply
      * displays dummy text.
      */
-    public static class DummySectionFragment extends Fragment {
+    public static class ListView extends Fragment {
+
+        public ListView() {
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.list_view_main, container, false);
+            return rootView;
+        }
+    }
+
+    /**
+     * A dummy fragment representing a section of the app, but that simply
+     * displays dummy text.
+     */
+    public static class CardView extends Fragment {
         /**
          * The fragment argument representing the section number for this
          * fragment.
          */
         public static final String ARG_SECTION_NUMBER = "section_number";
 
-        public DummySectionFragment() {
+        public CardView() {
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main_dummy, container, false);
+            View rootView = inflater.inflate(R.layout.card_view_main, container, false);
             TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
             dummyTextView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
             return rootView;
