@@ -13,12 +13,12 @@ public class DatabaseAdapter
 
     private final Context mContext;
     private SQLiteDatabase mDb;
-    private DataBaseHelper mDbHelper;
+    private SQLiteHelper mDbHelper;
 
     public DatabaseAdapter(Context context) 
     {
         this.mContext = context;
-        mDbHelper = new DataBaseHelper(mContext);
+        mDbHelper = new SQLiteHelper(mContext);
     }
 
     public DatabaseAdapter createDatabase() throws SQLException 
@@ -55,24 +55,65 @@ public class DatabaseAdapter
     {
         mDbHelper.close();
     }
+    
+    private Cursor getCursor(String query){
+    	try
+		{
+		    Cursor mCur = mDb.rawQuery(query, null);
+		    if (mCur!=null){
+		       mCur.moveToNext();
+		    }
+		    return mCur;
+		}
+		catch (SQLException mSQLException){
+		     Log.e(TAG, "getCursor >>"+ mSQLException.toString());
+	         throw mSQLException;
+		}
+    }
+    
+	public Cursor filterForTerm(String term){
+		return getCursor("SELECT " +
+				"	card._id 'Card._id', dec._id 'Deck._id', sec._id 'Section._id'"+
+				"FROM " +
+				"	Card card , Deck dec, Section sec"+
+				"WHERE " +
+				"	(	card.deckId = dec._id " +
+				"		and " +
+				"		dec.sectionId = sec._id" +
+				"	)"+
+				"	and " +
+				"	(	card.question LIKE '%"+term+"%' " +
+				"       or " +
+				"       card.answer LIKE '%"+term+"%' " +
+				"       or " +
+				"       dec.title LIKE '%"+term+"%'" +
+				"       or " +
+				"       sec.name LIKE '%"+term+"%'" +
+				"	)"
+			);
+	}
+	
+	public Cursor getCardsWithDeckId(String DeckId){
+		return getCursor("SELECT * FROM Card where deckId = "+DeckId);
+	}
+	
+	public Cursor getCardsWithIds(String cardIds){
+		return getCursor("SELECT * FROM Card WHERE _id in ("+cardIds+")");
+	}
+	
+	public Cursor getDecksWithSectionId(String sectionId){
+		return getCursor("SELECT * FROM Deck where sectionId = "+sectionId);
+	}
 
-     public Cursor getSections()
-     {
-         try
-         {
-             String sql ="SELECT * FROM Section";
-
-             Cursor mCur = mDb.rawQuery(sql, null);
-             if (mCur!=null)
-             {
-                mCur.moveToNext();
-             }
-             return mCur;
-         }
-         catch (SQLException mSQLException) 
-         {
-             Log.e(TAG, "getTestData >>"+ mSQLException.toString());
-             throw mSQLException;
-         }
-     }
+	public Cursor getDecksWithIds(String deckIds){
+		return getCursor("SELECT * FROM Deck WHERE _id in ("+deckIds+")");
+	}
+	
+	public Cursor getSectionsWithSectionIds(String sectionIds){
+		return getCursor("SELECT * FROM Section WHERE _id in ("+sectionIds+")");
+	}
+	    
+	public Cursor getSections(){
+		return getCursor("SELECT * FROM Section");
+	}
 }

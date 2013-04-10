@@ -11,44 +11,44 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-public class DataBaseHelper extends SQLiteOpenHelper
-{
-private static String TAG = "DataBaseHelper"; // Tag just for the LogCat window
-//destination path (location) of our database on device
-private static String DB_PATH = ""; 
-private static String DB_NAME ="studyBudy.sqlite";// Database name
-private SQLiteDatabase mDataBase; 
-private final Context mContext;
-
-public DataBaseHelper(Context context) 
-{
-    super(context, DB_NAME, null, 1);// 1? its Database Version
-    DB_PATH = context.getFilesDir() + "/../databases/";
-    Log.d(TAG,DB_PATH);
-    this.mContext = context;
-}   
-
-public void createDataBase() throws IOException
-{
-    //If database not exists copy it from the assets
-
-    boolean mDataBaseExist = checkDataBase();
-    if(!mDataBaseExist)
-    {
-        this.getReadableDatabase();
-        this.close();
-        try 
-        {
-            //Copy the database from assests
-            copyDataBase();
-            Log.e(TAG, "createDatabase database created");
-        } 
-        catch (IOException mIOException) 
-        {
-            throw new Error("ErrorCopyingDataBase");
-        }
-    }
-}
+public class SQLiteHelper extends SQLiteOpenHelper{
+	private static String TAG = "DataBaseHelper"; // Tag just for the LogCat window
+	//destination path (location) of our database on device
+	private static String DB_PATH = ""; 
+	private static String DB_NAME ="studyBudy.sqlite";// Database name
+	private SQLiteDatabase mDataBase; 
+	private final Context mContext;
+	
+	public SQLiteHelper(Context context) 
+	{
+	    super(context, DB_NAME, null, 1);// 1? its Database Version
+	    DB_PATH = context.getFilesDir() + "/../databases/";
+	    Log.d(TAG,DB_PATH);
+	    this.mContext = context;
+	}   
+	
+	public void createDataBase() throws IOException
+	{
+	    //If database not exists copy it from the assets
+	
+	    boolean mDataBaseExist = checkDataBase();
+	    if(!mDataBaseExist)
+	    {
+	        this.getReadableDatabase();
+	        this.close();
+	        try 
+	        {
+	            //Copy the database from assests
+	            copyDataBase();
+	            Log.e(TAG, "createDatabase database created");
+	        } 
+	        catch (IOException mIOException) 
+	        {
+	            throw new Error("ErrorCopyingDataBase");
+	        }
+	    }
+	}
+	
     //Check that the database exists here: /data/data/your package/databases/Da Name
     private boolean checkDataBase()
     {

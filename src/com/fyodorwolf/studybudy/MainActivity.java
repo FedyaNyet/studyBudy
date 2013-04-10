@@ -1,9 +1,13 @@
 package com.fyodorwolf.studybudy;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
+import android.app.ListActivity;
+import android.app.ListFragment;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -12,11 +16,16 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
@@ -159,21 +168,74 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             return null;
         }
     }
+    
+    public static class SectionView extends ListFragment {
+    	@Override
+    	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    	    // Inflate the layout for this fragment
+    	    final View V = inflater.inflate(R.layout.list_view_main, container, false);
 
-    /**
-     * A dummy fragment representing a section of the app, but that simply
-     * displays dummy text.
-     */
-    public static class ListView extends Fragment {
+    	    ListView lv =  (ListView) V.findViewById(R.id.list_view);
+    	    final ArrayList<String> ar = new ArrayList<String>();
+    	    EditText et = (EditText) V.findViewById(R.id.inputSearch);
+    	    final String[] words = list.TERM;
+    	    // Populate list with our static array of titles.
+    	    lv.setAdapter(new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_activated_1, list.TERM));
+    	    
+    	    lv.setTextFilterEnabled(true); 
+    	    et.addTextChangedListener(new TextWatcher(){
+    	    	
+	    	    public void beforeTextChanged(CharSequence s, int start, int count, int after){
+	    	    	// Abstract Method of TextWatcher Interface.
+	    	    }
+	    	    
+	    	    public void onTextChanged(CharSequence s,int start, int before, int count){
+		    	    textlength = et.getText().length();
+		    	    array_sort.clear();
+		    	    for (int i = 0; i < words.length; i++)
+		    	    {
+			    	    if (textlength <= words[i].length())
+			    	    {
+			    	    	if(et.getText().toString().equalsIgnoreCase((String)words[i].subSequence(0,textlength))){
+			    	    		array_sort.add(words[i]);
+			    	    	}
+			    	    }
+		    	    }
+		    	    lv.setAdapter(new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_activated_1, array_sort));
+	    	    }
+	    	    
+				@Override
+				public void afterTextChanged(Editable s) {
+					// TODO Auto-generated method stub
+					
+				}
+    	    });
 
-        public ListView() {
-        }
+    	    //Intent after selection is made
+    	    lv.setOnItemClickListener(new OnItemClickListener() {
+    	        @Override
+    	        public void onItemClick(AdapterView<?> parent, View view,
+    	                int position, long id) {
+    	            String name = lv.getItemAtPosition(position).toString();
+    	            for (int index = 0; index < words.length; index++)
+    	            {
+    	                if (name.equals(words[index]))
+    	                {
+    	                    position = index;
+    	                    break;
+    	                }
+    	            }
+    	            String d1  = words[position];
+    	            ar.add(d1.toString()); 
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.list_view_main, container, false);
-            return rootView;
-        }
+    	            showDetails(position);
+    	        }
+    	    });
+
+
+
+    	    return V;
+    	}
     }
 
     /**
