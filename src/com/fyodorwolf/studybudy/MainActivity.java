@@ -1,21 +1,18 @@
 package com.fyodorwolf.studybudy;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
-import android.app.ListActivity;
-import android.app.ListFragment;
-import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.ListFragment;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.SimpleCursorAdapter;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -23,7 +20,8 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -44,7 +42,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
      * The {@link ViewPager} that will host the section contents.
      */
     ViewPager mViewPager;
-
+	Fragment listView; 
+	Fragment cardView;
+      
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,22 +83,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                             .setText(mSectionsPagerAdapter.getPageTitle(i))
                             .setTabListener(this));
         }
-        Context myContext = this.getApplicationContext();
         
-        DatabaseAdapter mDbHelper = new DatabaseAdapter(myContext);        
-        mDbHelper.createDatabase();      
-        mDbHelper.open();
-
-        Cursor c = mDbHelper.getSections();
-
-        mDbHelper.close();
-        Log.d(STORAGE_SERVICE, "_id, name");
-		if(c.moveToFirst()){
-			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
-		} 
-		while (c.moveToNext()){
-			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
-		}
+    	listView = new SectionView();
+    	cardView = new CardView();
     }
 
     @Override
@@ -138,16 +125,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             // getItem is called to instantiate the fragment for the given page.
             // Return a DummySectionFragment (defined as a static inner class
             // below) with the page number as its lone argument.
+        	Fragment myFragment;
             if(position == 0){
-                Fragment listView = new ListView();
-                return listView;
+                myFragment = listView;
             }else{
-                Fragment cardView = new CardView();
+            	myFragment = cardView;
                 Bundle args = new Bundle();
                 args.putInt("ARG_SECTION_NUMBER", position+1);
-                cardView.setArguments(args);
-                return cardView;
+                myFragment.setArguments(args);
             }
+            return myFragment;
         }
 
         @Override
@@ -170,67 +157,79 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
     
     public static class SectionView extends ListFragment {
+    	
     	@Override
     	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     	    // Inflate the layout for this fragment
     	    final View V = inflater.inflate(R.layout.list_view_main, container, false);
 
-    	    ListView lv =  (ListView) V.findViewById(R.id.list_view);
-    	    final ArrayList<String> ar = new ArrayList<String>();
+    	    ListView lv =  (ListView) V.findViewById(android.R.id.list);
     	    EditText et = (EditText) V.findViewById(R.id.inputSearch);
-    	    final String[] words = list.TERM;
-    	    // Populate list with our static array of titles.
-    	    lv.setAdapter(new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_activated_1, list.TERM));
     	    
-    	    lv.setTextFilterEnabled(true); 
+        	DatabaseAdapter mDbHelper = new DatabaseAdapter(getActivity());        
+            mDbHelper.createDatabase();      
+            mDbHelper.open();
+            Cursor c = mDbHelper.getSections();
+            mDbHelper.close();
+            
+//          Log.d(STORAGE_SERVICE, "_id, name");
+//    		if(c.moveToFirst()){
+//    			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
+//    		} 
+//    		while (c.moveToNext()){
+//    			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
+//    		}
+ 
+    	    lv.setAdapter(new SimpleCursorAdapter(
+    	    		getActivity(),
+    	    		android.R.layout.simple_list_item_activated_1, 
+    	    		c, 
+    	    		new String[]{"name"}, 
+    	    		new int[]{android.R.id.text1}, 
+    	    		SimpleCursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
+    		));  
+    	    lv.setOnItemClickListener(new OnItemClickListener(){
+				@Override
+				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+	    	    	Log.d(STORAGE_SERVICE,"Clicked item in Position: "+position);
+				}
+			});
+    	    lv.setTextFilterEnabled(true);
     	    et.addTextChangedListener(new TextWatcher(){
     	    	
-	    	    public void beforeTextChanged(CharSequence s, int start, int count, int after){
-	    	    	// Abstract Method of TextWatcher Interface.
-	    	    }
+    	    	@Override
+	    	    public void beforeTextChanged(CharSequence s, int start, int count, int after){}
 	    	    
+    	    	@Override
 	    	    public void onTextChanged(CharSequence s,int start, int before, int count){
-		    	    textlength = et.getText().length();
-		    	    array_sort.clear();
-		    	    for (int i = 0; i < words.length; i++)
-		    	    {
-			    	    if (textlength <= words[i].length())
-			    	    {
-			    	    	if(et.getText().toString().equalsIgnoreCase((String)words[i].subSequence(0,textlength))){
-			    	    		array_sort.add(words[i]);
-			    	    	}
-			    	    }
-		    	    }
-		    	    lv.setAdapter(new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_activated_1, array_sort));
+	    	    	Log.d(STORAGE_SERVICE,"Search Text: "+s);
 	    	    }
 	    	    
 				@Override
-				public void afterTextChanged(Editable s) {
-					// TODO Auto-generated method stub
-					
-				}
+				public void afterTextChanged(Editable s) {}
     	    });
 
-    	    //Intent after selection is made
-    	    lv.setOnItemClickListener(new OnItemClickListener() {
-    	        @Override
-    	        public void onItemClick(AdapterView<?> parent, View view,
-    	                int position, long id) {
-    	            String name = lv.getItemAtPosition(position).toString();
-    	            for (int index = 0; index < words.length; index++)
-    	            {
-    	                if (name.equals(words[index]))
-    	                {
-    	                    position = index;
-    	                    break;
-    	                }
-    	            }
-    	            String d1  = words[position];
-    	            ar.add(d1.toString()); 
-
-    	            showDetails(position);
-    	        }
-    	    });
+//    	    
+//    	    //Intent after selection is made
+//    	    lv.setOnItemClickListener(new OnItemClickListener() {
+//    	        @Override
+//    	        public void onItemClick(AdapterView<?> parent, View view,
+//    	                int position, long id) {
+//    	            String name = lv.getItemAtPosition(position).toString();
+//    	            for (int index = 0; index < words.length; index++)
+//    	            {
+//    	                if (name.equals(words[index]))
+//    	                {
+//    	                    position = index;
+//    	                    break;
+//    	                }
+//    	            }
+//    	            String d1  = words[position];
+//    	            ar.add(d1.toString()); 
+//
+//    	            showDetails(position);
+//    	        }
+//    	    });
 
 
 

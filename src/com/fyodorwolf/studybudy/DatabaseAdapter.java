@@ -94,26 +94,26 @@ public class DatabaseAdapter
 	}
 	
 	public Cursor getCardsWithDeckId(String DeckId){
-		return getCursor("SELECT * FROM Card where deckId = "+DeckId);
+		return getCursor("SELECT _id, question, answer, status, numberInDeck FROM Card where deckId = "+DeckId);
 	}
 	
 	public Cursor getCardsWithIds(String cardIds){
-		return getCursor("SELECT * FROM Card WHERE _id in ("+cardIds+")");
+		return getCursor("SELECT _id, question, answer, status, numberInDeck FROM Card WHERE _id in ("+cardIds+")");
 	}
 	
 	public Cursor getDecksWithSectionId(String sectionId){
-		return getCursor("SELECT * FROM Deck where sectionId = "+sectionId);
+		return getCursor("SELECT _id, sectionId, cardId, title FROM Deck where sectionId = "+sectionId);
 	}
 
 	public Cursor getDecksWithIds(String deckIds){
-		return getCursor("SELECT * FROM Deck WHERE _id in ("+deckIds+")");
+		return getCursor("SELECT _id, sectionId, cardId, title FROM Deck WHERE _id in ("+deckIds+")");
 	}
 	
 	public Cursor getSectionsWithSectionIds(String sectionIds){
-		return getCursor("SELECT * FROM Section WHERE _id in ("+sectionIds+")");
+		return getCursor("SELECT _id, name, parentGroupId FROM Section WHERE _id in ("+sectionIds+")");
 	}
 	    
 	public Cursor getSections(){
-		return getCursor("SELECT * FROM Section");
+		return getCursor("SELECT _id, name, parentGroupId FROM Section");
 	}
 }
