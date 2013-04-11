@@ -1,5 +1,6 @@
 package com.fyodorwolf.studybudy;
 
+import java.util.EventListener;
 import java.util.Locale;
 
 import android.app.ActionBar;
@@ -19,9 +20,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -131,7 +134,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             }else{
             	myFragment = cardView;
                 Bundle args = new Bundle();
-                args.putInt("ARG_SECTION_NUMBER", position+1);
+                args.putString("ARG_SECTION_NUMBER", "Card View");
                 myFragment.setArguments(args);
             }
             return myFragment;
@@ -139,7 +142,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
         @Override
         public int getCount() {
-            // Show 2 total pages.
             return 2;
         }
 
@@ -164,22 +166,13 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     	    final View V = inflater.inflate(R.layout.list_view_main, container, false);
 
     	    ListView lv =  (ListView) V.findViewById(android.R.id.list);
-    	    EditText et = (EditText) V.findViewById(R.id.inputSearch);
+    	    EditText et = (EditText) V.findViewById(R.id.inputSearch);    	    
     	    
         	DatabaseAdapter mDbHelper = new DatabaseAdapter(getActivity());        
             mDbHelper.createDatabase();      
             mDbHelper.open();
-            Cursor c = mDbHelper.getSections();
-            mDbHelper.close();
+            Cursor c = mDbHelper.getSections();	
             
-//          Log.d(STORAGE_SERVICE, "_id, name");
-//    		if(c.moveToFirst()){
-//    			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
-//    		} 
-//    		while (c.moveToNext()){
-//    			Log.d(STORAGE_SERVICE, c.getString(0)+", "+c.getString(1));
-//    		}
- 
     	    lv.setAdapter(new SimpleCursorAdapter(
     	    		getActivity(),
     	    		android.R.layout.simple_list_item_activated_1, 
@@ -187,14 +180,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     	    		new String[]{"name"}, 
     	    		new int[]{android.R.id.text1}, 
     	    		SimpleCursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
-    		));  
-    	    lv.setOnItemClickListener(new OnItemClickListener(){
-				@Override
-				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-	    	    	Log.d(STORAGE_SERVICE,"Clicked item in Position: "+position);
-				}
-			});
-    	    lv.setTextFilterEnabled(true);
+    		));
+    	    
     	    et.addTextChangedListener(new TextWatcher(){
     	    	
     	    	@Override
@@ -209,32 +196,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 				public void afterTextChanged(Editable s) {}
     	    });
 
-//    	    
-//    	    //Intent after selection is made
-//    	    lv.setOnItemClickListener(new OnItemClickListener() {
-//    	        @Override
-//    	        public void onItemClick(AdapterView<?> parent, View view,
-//    	                int position, long id) {
-//    	            String name = lv.getItemAtPosition(position).toString();
-//    	            for (int index = 0; index < words.length; index++)
-//    	            {
-//    	                if (name.equals(words[index]))
-//    	                {
-//    	                    position = index;
-//    	                    break;
-//    	                }
-//    	            }
-//    	            String d1  = words[position];
-//    	            ar.add(d1.toString()); 
-//
-//    	            showDetails(position);
-//    	        }
-//    	    });
-
-
-
     	    return V;
     	}
+    	
+    	@Override 
+        public void onListItemClick(ListView parent, View v, int position, long id) { 
+    		Log.d(STORAGE_SERVICE,"Item In Pos:"+position+" with ID:"+id);
+        }
+    	
     }
 
     /**
@@ -246,7 +215,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
          * The fragment argument representing the section number for this
          * fragment.
          */
-        public static final String ARG_SECTION_NUMBER = "section_number";
+        public static final String ARG_SECTION_NUMBER = "";
 
         public CardView() {
         }

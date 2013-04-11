@@ -54,7 +54,7 @@ public class SQLiteHelper extends SQLiteOpenHelper{
     {
         File dbFile = new File(DB_PATH + DB_NAME);
         //Log.v("dbFile", dbFile + "   "+ dbFile.exists());
-        dbFile.delete(); //Use newest version for dev...
+        //dbFile.delete(); //Use newest version for dev...
         return dbFile.exists();
     }
 
