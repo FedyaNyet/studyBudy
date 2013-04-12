@@ -56,6 +56,12 @@ public class DatabaseAdapter
         }
         return this;
     }
+    
+    public void close(){
+    	if(mDb != null){
+    		mDb.close();
+    	}
+    }
 
     public Cursor getCursor(String query){
     	try{

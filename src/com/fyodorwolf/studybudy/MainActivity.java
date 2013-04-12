@@ -1,8 +1,8 @@
 package com.fyodorwolf.studybudy;
 
-import android.app.ActionBar;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -22,23 +22,14 @@ public class MainActivity extends ListActivity{
 
 	EditText searchBox;
 	ListView listView;
-	Cursor dataProvider;
-	
+	private DatabaseAdapter myDB;
 	private static final String TAG = "MainActivity";
 	
       
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	
-    	/************************************************************
-    	 * The following is simply to migrate the database 
-    	 * file from assets to the application database director.
-    	 ************************************************************/
-
         // define main views.
 		setContentView(R.layout.list_view);
-        final ActionBar actionBar = getActionBar();
-        actionBar.setNavigationMode(ActionBar.DISPLAY_HOME_AS_UP);
 		
         //define the local views to be used
     	searchBox = (EditText) this.findViewById(R.id.edit_text);
@@ -70,11 +61,19 @@ public class MainActivity extends ListActivity{
         listView.setOnItemClickListener(new OnItemClickListener(){
 			@Override
 			public void onItemClick(AdapterView<?> adapterView, View view, int position,long id) {
-				Log.d(TAG,"Clicked "+id);
+				Intent it = new Intent(MainActivity.this,SectionActivity.class);
+				it.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
+				it.putExtra("com.example.studyBudy.SectionId", id);
+		        startActivity(it); 
 			}
         });
-        SelectDataTask sectionGetter = new SelectDataTask();
-        //ask another thread to get the data and 
+
+
+    	myDB = DatabaseAdapter.getInstance(this);
+    	
+        //ask another thread to get the sections and display them. 
+        SectionGetter sectionGetter = new SectionGetter();
         sectionGetter.execute(DatabaseAdapter.allSectionsQuery());
         super.onCreate(savedInstanceState);
     }
@@ -87,20 +86,15 @@ public class MainActivity extends ListActivity{
     }
     
     
-    
 /********************************************************************************************************************************************
  * 							Private Classes		 																							*
  ********************************************************************************************************************************************/
-	private class SelectDataTask extends AsyncTask<String, Integer, Cursor> {
-		
-		private final DatabaseAdapter myDB = DatabaseAdapter.getInstance(MainActivity.this);
+	private class SectionGetter extends AsyncTask<String, Integer, Cursor> {
+
 		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 
 		@Override
-		protected void onPreExecute() {
-			this.dialog.setMessage("Selecting data...");
-			this.dialog.show();
-		}
+		protected void onPreExecute() {}
 
 		@Override
 		protected Cursor doInBackground(String... params) {
