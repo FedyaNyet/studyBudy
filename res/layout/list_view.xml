@@ -5,15 +5,20 @@
     android:id="@+id/sections"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:descendantFocusability="beforeDescendants"
+	android:focusableInTouchMode="true" 
     android:orientation="vertical">
-
+	
     <!-- Editext for Search -->
-    <EditText 
+
+    <EditText
         android:id="@+id/edit_text"
-        android:hint="@+id/edit_text"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:inputType="textVisiblePassword"/>
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:hint="@+id/edit_text"
+        android:inputType="textFilter" />
  
     <!-- List View -->
     <ListView
