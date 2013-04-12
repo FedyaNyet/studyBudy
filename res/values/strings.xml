@@ -6,5 +6,6 @@
     <string name="title_section1">List</string>
     <string name="title_section2">Review</string>
     <string name="searchString">Search products..</string>
+    <string name="section_name">Section Name</string>
 
 </resources>

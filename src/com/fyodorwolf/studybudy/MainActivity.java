@@ -1,94 +1,80 @@
 package com.fyodorwolf.studybudy;
 
-import java.util.EventListener;
-import java.util.Locale;
+import java.util.List;
 
 import android.app.ActionBar;
-import android.app.FragmentTransaction;
+import android.app.ListActivity;
+import android.app.ProgressDialog;
+import android.content.AsyncQueryHandler;
 import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.app.ListFragment;
-import android.support.v4.view.ViewPager;
-import android.support.v4.widget.SimpleCursorAdapter;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.CursorAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.SimpleCursorAdapter;
 
-public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
+public class MainActivity extends ListActivity{
 
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link android.support.v4.app.FragmentPagerAdapter} derivative, which
-     * will keep every loaded fragment in memory. If this becomes too memory
-     * intensive, it may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    SectionsPagerAdapter mSectionsPagerAdapter;
-
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    ViewPager mViewPager;
-	Fragment listView; 
-	Fragment cardView;
+	EditText searchBox;
+	ListView listView;
+	
+	private static final String TAG = "MainActivity";
+	
       
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    	
+    	/************************************************************
+    	 * The following is simply to migrate the database 
+    	 * file from assets to the application database director.
+    	 ************************************************************/
 
-        // Set up the action bar.
+        // define main views.
+		setContentView(R.layout.list_view);
         final ActionBar actionBar = getActionBar();
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        actionBar.setNavigationMode(ActionBar.DISPLAY_HOME_AS_UP);
+		
+        //define the local views to be used
+    	searchBox = (EditText) this.findViewById(R.id.edit_text);
+    	listView = (ListView)this.getListView();
 
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the app.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+    	/*
+    	 *Add local view listeners 
+    	****************************/
+        searchBox.addTextChangedListener(new TextWatcher() {
 
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.pager);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-
-        // When swiping between different sections, select the corresponding
-        // tab. We can also use ActionBar.Tab#select() to do this if we have
-        // a reference to the Tab.
-        mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-            @Override
-            public void onPageSelected(int position) {
-                actionBar.setSelectedNavigationItem(position);
+			@Override
+			public void afterTextChanged(Editable s) {
+				// TODO Auto-generated method stub
+			}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+//				_myAdapter.getFilter().filter(s);
+            	Log.d(TAG,"Search: "+s.toString());
             }
         });
-
-        // For each of the sections in the app, add a tab to the action bar.
-        for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-            // Create a tab with text corresponding to the page title defined by
-            // the adapter. Also specify this Activity object, which implements
-            // the TabListener interface, as the callback (listener) for when
-            // this tab is selected.
-            actionBar.addTab(
-                    actionBar.newTab()
-                            .setText(mSectionsPagerAdapter.getPageTitle(i))
-                            .setTabListener(this));
-        }
         
-    	listView = new SectionView();
-    	cardView = new CardView();
+    	listView.setAdapter(new SimpleCursorAdapter(this,android.R.layout.simple_list_item_1,null,null,null,CursorAdapter.NO_SELECTION));
+        listView.setOnItemClickListener(new OnItemClickListener(){
+
+			@Override
+			public void onItemClick(AdapterView<?> adapterView, View view, int position,long id) {
+				Log.d(TAG,"Clicked "+id);
+			}
+        });
+        SelectDataTask sectionGetter = new SelectDataTask();
+        //ask another thread to get the data and 
+        sectionGetter.execute(DatabaseAdapter.allSectionsQuery());
+        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -98,136 +84,39 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         return true;
     }
     
-    @Override
-    public void onTabSelected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-        // When the given tab is selected, switch to the corresponding page in
-        // the ViewPager.
-        mViewPager.setCurrentItem(tab.getPosition());
-    }
+    /*****************************
+     * 		Private Classes		 *
+     *****************************/
+	private class SelectDataTask extends AsyncTask<String, Integer, Cursor> {
+		
+		private final String TAG = "SelectDataTask";
+		private final DatabaseAdapter myDB = DatabaseAdapter.getInstance(MainActivity.this);
+		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 
-    @Override
-    public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-    }
+		// can use UI thread here
+		protected void onPreExecute() {
+			this.dialog.setMessage("Selecting data...");
+			this.dialog.show();
+		}
 
-    @Override
-    public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-    }
-
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a DummySectionFragment (defined as a static inner class
-            // below) with the page number as its lone argument.
-        	Fragment myFragment;
-            if(position == 0){
-                myFragment = listView;
-            }else{
-            	myFragment = cardView;
-                Bundle args = new Bundle();
-                args.putString("ARG_SECTION_NUMBER", "Card View");
-                myFragment.setArguments(args);
-            }
-            return myFragment;
-        }
-
-        @Override
-        public int getCount() {
-            return 2;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            Locale l = Locale.getDefault();
-            switch (position) {
-                case 0:
-                    return getString(R.string.title_section1).toUpperCase(l);
-                case 1:
-                    return getString(R.string.title_section2).toUpperCase(l);
-            }
-            return null;
-        }
-    }
-    
-    public static class SectionView extends ListFragment {
-    	
-    	@Override
-    	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    	    // Inflate the layout for this fragment
-    	    final View V = inflater.inflate(R.layout.list_view_main, container, false);
-
-    	    ListView lv =  (ListView) V.findViewById(android.R.id.list);
-    	    EditText et = (EditText) V.findViewById(R.id.inputSearch);    	    
-    	    
-        	DatabaseAdapter mDbHelper = new DatabaseAdapter(getActivity());        
-            mDbHelper.createDatabase();      
-            mDbHelper.open();
-            Cursor c = mDbHelper.getSections();	
-            
-    	    lv.setAdapter(new SimpleCursorAdapter(
-    	    		getActivity(),
-    	    		android.R.layout.simple_list_item_activated_1, 
-    	    		c, 
-    	    		new String[]{"name"}, 
-    	    		new int[]{android.R.id.text1}, 
-    	    		SimpleCursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
-    		));
-    	    
-    	    et.addTextChangedListener(new TextWatcher(){
-    	    	
-    	    	@Override
-	    	    public void beforeTextChanged(CharSequence s, int start, int count, int after){}
-	    	    
-    	    	@Override
-	    	    public void onTextChanged(CharSequence s,int start, int before, int count){
-	    	    	Log.d(STORAGE_SERVICE,"Search Text: "+s);
-	    	    }
-	    	    
-				@Override
-				public void afterTextChanged(Editable s) {}
-    	    });
-
-    	    return V;
-    	}
-    	
-    	@Override 
-        public void onListItemClick(ListView parent, View v, int position, long id) { 
-    		Log.d(STORAGE_SERVICE,"Item In Pos:"+position+" with ID:"+id);
-        }
-    	
-    }
-
-    /**
-     * A dummy fragment representing a section of the app, but that simply
-     * displays dummy text.
-     */
-    public static class CardView extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        public static final String ARG_SECTION_NUMBER = "";
-
-        public CardView() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.card_view_main, container, false);
-            TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
-            dummyTextView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
-        }
-    }
-
+		@Override
+		protected Cursor doInBackground(String... params) {
+			return myDB.getCursor(params[0]);
+		}
+		// can use UI thread here
+		protected void onPostExecute(final Cursor result) {
+			Log.d(TAG,result.toString());
+			result.moveToFirst();
+			while(result.getPosition() != result.getCount()){
+				Log.d(TAG,"name"+result.getPosition()+": "+result.getString(1));
+				result.moveToNext();
+			}
+			result.moveToFirst();
+	    	SimpleCursorAdapter adp = (SimpleCursorAdapter) listView.getAdapter();
+	    	adp.changeCursorAndColumns(result, new String[]{"name"},new int[]{android.R.id.text1});
+			this.dialog.hide();
+		}
+	}
+	
+	
 }
