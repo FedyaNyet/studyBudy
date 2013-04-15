@@ -15,10 +15,12 @@ import android.util.Log;
 
 public class DatabaseAdapter
 {
+	public final static boolean WIPE_DATABASE = false;
+	
+	protected static final String TAG = "DataAdapter";
+    
 	//this is a singleton class
 	private static DatabaseAdapter instance = null;
-	public final static boolean WIPE_DATABASE = false;
-    protected static final String TAG = "DataAdapter";
     private SQLiteDatabase mDb;
     private SQLiteHelper mDbHelper;
 
@@ -105,11 +107,22 @@ public class DatabaseAdapter
 	}
 	
 	public static String decksWithSectionIdQuery(long sectionId){
-		return "SELECT _id, sectionId, title FROM Deck where sectionId = "+sectionId;
+		return "SELECT _id, name FROM Deck where sectionId = "+sectionId;
 	}
 	
 	public static String allSectionsQuery(){
 		return "SELECT _id, name FROM Section";
+	}
+	
+	public static String getGroupedDeckQuery(){
+		return "SELECT " +
+					"sec._id," +
+					"sec.name," +
+					"deck._id," +
+					"deck.name " +
+				"FROM " +
+					"Section sec " +
+				"JOIN Deck deck ON deck.sectionId = sec._id";
 	}
 	
 	

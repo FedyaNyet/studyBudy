@@ -22,13 +22,13 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.fyodorwolf.studybudy.SectionActivity"
-            android:label="@string/section_name" >
+            android:name="com.fyodorwolf.studybudy.DeckActivity"
+            android:label="@string/deck_name" >
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.DECK" />
+                <category android:name="android.intent.category.APP" />
             </intent-filter>
         </activity>
     </application>
-
+    
 </manifest>

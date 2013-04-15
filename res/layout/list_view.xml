@@ -21,7 +21,7 @@
         android:inputType="textFilter" />
  
     <!-- List View -->
-    <ListView
+    <ExpandableListView
         android:id="@android:id/list"
         android:hint="@+id/list_view"
         android:layout_width="fill_parent"

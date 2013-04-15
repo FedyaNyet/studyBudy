@@ -1,19 +1,8 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical" >
- 
-    <!-- Editext for Search -->
-    <EditText android:id="@+id/search_box"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:hint="@+id/search_box"
-        android:inputType="textVisiblePassword"/>
- 
-    <!-- List View -->
-    <ListView
-        android:id="@android:id/list"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"/>
- 
-</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/container"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+	<include android:id="@+id/notelist" layout="@layout/card_front" />
+	<include android:id="@+id/notelist" layout="@layout/card_back" />
+</FrameLayout>

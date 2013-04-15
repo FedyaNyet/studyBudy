@@ -1,27 +1,35 @@
 package com.fyodorwolf.studybudy;
 
-import android.app.ListActivity;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import android.app.ExpandableListActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.CursorAdapter;
 import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
+import android.widget.ExpandableListAdapter;
+import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.TextView;
 
-public class MainActivity extends ListActivity{
+public class MainActivity extends ExpandableListActivity{
 
 	EditText searchBox;
-	ListView listView;
+	ExpandableListView listView;
 	private DatabaseAdapter myDB;
 	private static final String TAG = "MainActivity";
 	
@@ -30,10 +38,11 @@ public class MainActivity extends ListActivity{
     protected void onCreate(Bundle savedInstanceState) {
         // define main views.
 		setContentView(R.layout.list_view);
+	    getActionBar().setDisplayHomeAsUpEnabled(false);
 		
         //define the local views to be used
     	searchBox = (EditText) this.findViewById(R.id.edit_text);
-    	listView = (ListView)this.getListView();
+    	listView = this.getExpandableListView();
         
     	/*
     	 *Add local view listeners 
@@ -57,24 +66,29 @@ public class MainActivity extends ListActivity{
         });
 
     	listView.requestFocus();
-    	listView.setAdapter(new SimpleCursorAdapter(this,android.R.layout.simple_list_item_1,null,null,null,CursorAdapter.NO_SELECTION));
-        listView.setOnItemClickListener(new OnItemClickListener(){
+    	listView.setOnItemClickListener(new OnItemClickListener(){
 			@Override
 			public void onItemClick(AdapterView<?> adapterView, View view, int position,long id) {
-				Intent it = new Intent(MainActivity.this,SectionActivity.class);
-				it.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
-                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
-				it.putExtra("com.example.studyBudy.SectionId", id);
-		        startActivity(it); 
+				Log.d(TAG,"selected Item"); 
 			}
         });
+		listView.setOnChildClickListener(new OnChildClickListener(){
 
-
+			@Override
+			public boolean onChildClick(ExpandableListView parent, View child, int groupIdx, int childIdx, long deckId) {
+				Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
+				deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
+				deckIntent.putExtra("com.example.studyBudy.deckId", deckId);
+		        startActivity(deckIntent);
+				return false;
+			}
+		});
     	myDB = DatabaseAdapter.getInstance(this);
     	
         //ask another thread to get the sections and display them. 
         SectionGetter sectionGetter = new SectionGetter();
-        sectionGetter.execute(DatabaseAdapter.allSectionsQuery());
+        sectionGetter.execute(DatabaseAdapter.getGroupedDeckQuery());
         super.onCreate(savedInstanceState);
     }
 
@@ -103,11 +117,149 @@ public class MainActivity extends ListActivity{
 		
 		@Override
 		protected void onPostExecute(final Cursor result) {
-	    	SimpleCursorAdapter adp = (SimpleCursorAdapter) listView.getAdapter();
-	    	adp.changeCursorAndColumns(result, new String[]{"name"},new int[]{android.R.id.text1});
+			
+			final ArrayList<Section> expListData = new ArrayList<Section>();
+			HashMap<Long,Section> sections = new HashMap<Long,Section>();
+			result.moveToFirst();
+			while(result.moveToNext()){
+				//define query results
+				Long sectionId = result.getLong(0);
+				String sectionName = result.getString(1);
+				Long deckId = result.getLong(2);
+				String deckName = result.getString(3);
+				//build the dataStores
+				Section section = sections.get(sectionId);
+				if(section == null){
+					section = new Section(sectionId, sectionName);
+					expListData.add(section);
+					sections.put(sectionId, section);
+				}
+				section.decks.add(new Deck(deckId,deckName));
+			}
+			
+			listView.setAdapter(new ExpandableListAdapter(){
+
+				@Override
+				public boolean areAllItemsEnabled() {
+					return true;
+				}
+
+				@Override
+				public Object getChild(int groupPosition, int childPosition) {
+					return expListData.get(groupPosition).decks.get(childPosition);
+				}
+
+				@Override
+				public long getChildId(int groupPosition, int childPosition) {
+					return expListData.get(groupPosition).decks.get(childPosition).id;
+				}
+
+				@Override
+				public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+					View item = LayoutInflater.from(getApplicationContext()).inflate(android.R.layout.simple_list_item_activated_1, null);
+					TextView tv = (TextView) item.findViewById(android.R.id.text1);
+					Deck deck = (Deck) getChild(groupPosition,childPosition);
+					tv.setText(deck.name);
+					tv.setTextColor(Color.BLACK);
+					return item;
+				}
+
+				@Override
+				public int getChildrenCount(int groupPosition) {
+					return expListData.get(groupPosition).decks.size();
+				}
+
+				@Override
+				public long getCombinedChildId(long groupId, long childId) {
+					return childId;
+				}
+
+				@Override
+				public long getCombinedGroupId(long groupId) {
+					return groupId;
+				}
+
+				@Override
+				public Object getGroup(int groupPosition) {
+					return expListData.get(groupPosition);
+				}
+
+				@Override
+				public int getGroupCount() {
+					return expListData.size();
+				}
+
+				@Override
+				public long getGroupId(int groupPosition) {
+					return expListData.get(groupPosition).id;
+				}
+
+				@Override
+				public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
+					View item = LayoutInflater.from(getApplicationContext()).inflate(android.R.layout.simple_expandable_list_item_1,null);
+					item.setBackgroundColor(Color.GRAY);
+					TextView tv = (TextView) item.findViewById(android.R.id.text1);
+					Section sec = (Section) getGroup(groupPosition);
+					tv.setText(sec.name);
+					tv.setTextColor(Color.WHITE);
+					return item;
+				}
+
+				@Override
+				public boolean hasStableIds() {
+					return true;
+				}
+
+				@Override
+				public boolean isChildSelectable(int groupPosition, int childPosition) {
+					return true;
+				}
+
+				@Override
+				public boolean isEmpty() {
+					return false;
+				}
+
+				@Override
+				public void onGroupCollapsed(int groupPosition) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void onGroupExpanded(int groupPosition) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void registerDataSetObserver(DataSetObserver observer) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void unregisterDataSetObserver(DataSetObserver observer) {
+					// TODO Auto-generated method stub
+					
+				}
+			});
 			this.dialog.hide();
 		}
 	}
 	
-	
+	private class Deck{
+		public String name;
+		public long id;
+		public Deck(long id, String name){
+			this.id = id;
+			this.name = name;
+		}
+	}
+	private class Section extends Deck{
+		public ArrayList<Deck> decks = new ArrayList<Deck>();
+		public Section(long id, String name) {
+			super(id,name);
+		}
+	}
 }
