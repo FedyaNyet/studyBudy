@@ -13,37 +13,14 @@ import android.widget.ImageView;
 
 public class DeckActivity extends Activity {
 
-		
+	private static final String TAG = "ListActivity";
+	private DatabaseAdapter myDB;
 	
 	private ImageView image1;
 	private ImageView image2;
-	
 	private boolean isFirstImage = true;
-
-	private void applyRotation(float start, float end) {
-		// Find the center of image
-		final float centerX = image1.getWidth() / 2.0f;
-		final float centerY = image1.getHeight() / 2.0f;
-		
-		// Create a new 3D rotation with the supplied parameter
-		// The animation listener is used to trigger the next animation
-		final Flip3dAnimation rotation = new Flip3dAnimation(start, end, centerX, centerY);
-		rotation.setDuration(500);
-		rotation.setFillAfter(true);
-		rotation.setInterpolator(new AccelerateInterpolator());
-		rotation.setAnimationListener(new DisplayNextView(isFirstImage, image1, image2));
-		
-		if (isFirstImage)
-		{
-			image1.startAnimation(rotation);
-		} else {
-			image2.startAnimation(rotation);
-		}
+	boolean animating = false;
 	
-	}
-	
-	private static final String TAG = "ListActivity";
-	private DatabaseAdapter myDB;
     
 
 	@Override
@@ -63,17 +40,21 @@ public class DeckActivity extends Activity {
 		image2.setVisibility(View.GONE);
 		
 		image1.setOnClickListener(new View.OnClickListener() {
-		   public void onClick(View view) {
-		    if (isFirstImage) {       
-		     applyRotation(0, 90);
-		     isFirstImage = !isFirstImage;
 		
-		    } else {    
-		     applyRotation(0, -90);
-		     isFirstImage = !isFirstImage;
-		    }
-		   }
+			@Override
+			public void onClick(View view) {
+				if(!animating){
+					animating = true;
+					if (isFirstImage) {      
+						applyRotation(0, 90);
+					} else { 
+						applyRotation(0, -90);
+					}
+					isFirstImage = !isFirstImage;
+				}
+			}
 		});  
+		
         super.onCreate(savedInstanceState);
 	}
 
@@ -97,6 +78,30 @@ public class DeckActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
     
+    public void rotationComplete(){
+    	this.animating = false;
+    }
+
+
+	private void applyRotation(float start, float end) {
+		// Find the center of image
+		final float centerX = image1.getWidth() / 2.0f;
+		final float centerY = image1.getHeight() / 2.0f;
+		
+		// Create a new 3D rotation with the supplied parameter
+		// The animation listener is used to trigger the next animation
+		final Flip3dAnimation rotation = new Flip3dAnimation(start, end, centerX, centerY);
+		rotation.setDuration(500);
+		rotation.setFillAfter(true);
+		rotation.setInterpolator(new AccelerateInterpolator());
+		rotation.setAnimationListener(new DisplayNextView(isFirstImage, image1, image2, this));
+		if (isFirstImage){
+			image1.startAnimation(rotation);
+		} else {
+			image2.startAnimation(rotation);
+		}
+	
+	}
     
 /********************************************************************************************************************************************
  * 							Private Classes		 																							*
