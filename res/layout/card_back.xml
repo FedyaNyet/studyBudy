@@ -1,13 +1,38 @@
-<RelativeLayout android:id="@+id/Layout02"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	xmlns:android="http://schemas.android.com/apk/res/android">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_back"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/white"
+    android:layout_alignParentBottom="true"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentRight="true"
+    android:layout_alignParentTop="true"
+    android:layout_marginBottom="20dp"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp"
+    android:layout_marginTop="20dp" >
+
 	<ImageView
-		android:layout_centerHorizontal="true"
-		android:layout_centerVertical="true"
-		android:contentDescription="@string/mascot_desc"
-		android:layout_width="wrap_content"
-		android:id="@+id/ImageView02"
-		android:layout_height="wrap_content"
-		android:src="@drawable/mascot_back"/>
+	    android:id="@+id/ImageView02"
+	    android:layout_width="189dp"
+	    android:layout_height="282dp"
+	    android:layout_marginLeft="44dp"
+	    android:layout_marginTop="52dp"
+	    android:contentDescription="@string/mascot_desc"
+	    android:src="@drawable/mascot_back" />
+
+	<Button
+	    android:id="@+id/flip_to_front"
+	    style="?android:attr/buttonStyleSmall"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_alignParentBottom="true"
+	    android:layout_centerHorizontal="true"
+	    android:layout_marginBottom="20dp"
+	    android:maxWidth="@dimen/flip_width"
+	    android:minHeight="48dp"
+	    android:minWidth="@dimen/flip_width"
+	    android:text="@string/button_flip"
+	    android:width="@dimen/flip_width" />
+
 </RelativeLayout>

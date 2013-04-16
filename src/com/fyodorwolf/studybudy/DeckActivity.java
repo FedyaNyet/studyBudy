@@ -8,16 +8,18 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.animation.AccelerateInterpolator;
-import android.widget.ImageView;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 
 public class DeckActivity extends Activity {
 
 	private static final String TAG = "ListActivity";
 	private DatabaseAdapter myDB;
 	
-	private ImageView image1;
-	private ImageView image2;
+	private RelativeLayout cardFront;
+	private RelativeLayout cardBack;
 	private boolean isFirstImage = true;
 	boolean animating = false;
 	
@@ -26,35 +28,20 @@ public class DeckActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState){
 
-	    setContentView(R.layout.card_view);
+		setContentView(R.layout.card_view);
+		cardFront = (RelativeLayout)findViewById(R.id.card_front);
+		cardBack  = (RelativeLayout)findViewById(R.id.card_back);
+		Log.d(TAG,cardBack.toString());
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
-		long sectionId =  getIntent().getExtras().getLong("com.example.studyBudy.deckId");
-		Log.d(TAG,"SectionID: "+String.valueOf(sectionId));
+		long deckId =  getIntent().getExtras().getLong("com.example.studyBudy.deckId");
+		Log.d(TAG,"SectionID: "+String.valueOf(deckId));
         setTitle("DeckName");
+		
+        DeckGetter getCards = new DeckGetter();
+        getCards.execute(DatabaseAdapter.cardsWithDeckIdQuery(deckId));
 
-		super.onCreate(savedInstanceState);
-		
-		image1 = (ImageView) findViewById(R.id.ImageView01);
-		image2 = (ImageView) findViewById(R.id.ImageView02);
-		image2.setVisibility(View.GONE);
-		
-		image1.setOnClickListener(new View.OnClickListener() {
-		
-			@Override
-			public void onClick(View view) {
-				if(!animating){
-					animating = true;
-					if (isFirstImage) {      
-						applyRotation(0, 90);
-					} else { 
-						applyRotation(0, -90);
-					}
-					isFirstImage = !isFirstImage;
-				}
-			}
-		});  
-		
+    	myDB = DatabaseAdapter.getInstance(this);
         super.onCreate(savedInstanceState);
 	}
 
@@ -85,20 +72,20 @@ public class DeckActivity extends Activity {
 
 	private void applyRotation(float start, float end) {
 		// Find the center of image
-		final float centerX = image1.getWidth() / 2.0f;
-		final float centerY = image1.getHeight() / 2.0f;
+		final float centerX = cardFront.getWidth() / 2.0f;
+		final float centerY = cardFront.getHeight() / 2.0f;
 		
 		// Create a new 3D rotation with the supplied parameter
 		// The animation listener is used to trigger the next animation
 		final Flip3dAnimation rotation = new Flip3dAnimation(start, end, centerX, centerY);
-		rotation.setDuration(500);
+		rotation.setDuration(300);
 		rotation.setFillAfter(true);
 		rotation.setInterpolator(new AccelerateInterpolator());
-		rotation.setAnimationListener(new DisplayNextView(isFirstImage, image1, image2, this));
+		rotation.setAnimationListener(new DisplayNextView(isFirstImage, cardFront, cardBack, this));
 		if (isFirstImage){
-			image1.startAnimation(rotation);
+			cardFront.startAnimation(rotation);
 		} else {
-			image2.startAnimation(rotation);
+			cardBack.startAnimation(rotation);
 		}
 	
 	}
@@ -110,12 +97,34 @@ public class DeckActivity extends Activity {
 
 		@Override
 		protected Cursor doInBackground(String... params) {
+			Log.d(TAG,"gettingDeck: "+params[0]);
 			return myDB.getCursor(params[0]);
 		}
 
 		@Override
 		protected void onPostExecute(final Cursor result) {
+
+			OnClickListener onClick = new OnClickListener() {
+				
+				@Override
+				public void onClick(View view) {
+					if(!animating){
+						animating = true;
+						if (isFirstImage) {      
+							applyRotation(0, 90);
+						} else { 
+							applyRotation(0, -90);
+						}
+						isFirstImage = !isFirstImage;
+					}
+				}
+			};
+			Log.d(TAG,cardFront.toString());
+			Button flipBack  = (Button)cardFront.findViewById(R.id.flip_to_back);
+			Button flipFront = (Button)cardBack.findViewById(R.id.flip_to_front);
 			
+			flipBack.setOnClickListener(onClick); 
+			flipFront.setOnClickListener(onClick);  
 		}
 		
 	}

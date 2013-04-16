@@ -6,15 +6,17 @@ import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 public final class DisplayNextView implements Animation.AnimationListener{
 	
 	private boolean mCurrentView;
-	ImageView image1;
-	ImageView image2;
+	RelativeLayout image1;
+	RelativeLayout image2;
+	long duration;
 	Activity sender;
 	
-	public DisplayNextView(boolean currentView, ImageView image1, ImageView image2, Activity sender) {
+	public DisplayNextView(boolean currentView, RelativeLayout image1, RelativeLayout image2, Activity sender) {
 		mCurrentView = currentView;
 		this.image1 = image1;
 		this.image2 = image2;
@@ -22,7 +24,9 @@ public final class DisplayNextView implements Animation.AnimationListener{
 	}
 	
 	@Override
-	public void onAnimationStart(Animation animation) {}
+	public void onAnimationStart(Animation animation) {
+		duration = animation.getDuration();
+	}
 
 	@Override
 	public void onAnimationEnd(Animation animation) {
@@ -39,10 +43,10 @@ public final class DisplayNextView implements Animation.AnimationListener{
 
 	private class SwapViews implements Runnable{
 		private boolean mIsFirstView;
-		ImageView image1;
-		ImageView image2;
+		RelativeLayout image1;
+		RelativeLayout image2;
 
-		public SwapViews(boolean isFirstView, ImageView image1, ImageView image2) {
+		public SwapViews(boolean isFirstView, RelativeLayout image1, RelativeLayout image2) {
 			mIsFirstView = isFirstView;
 			this.image1 = image1;
 			this.image2 = image2;
@@ -66,7 +70,7 @@ public final class DisplayNextView implements Animation.AnimationListener{
 				rotation = new Flip3dAnimation(90, 0, centerX, centerY);
 			}
 			
-			rotation.setDuration(500);
+			rotation.setDuration(duration);
 			rotation.setFillAfter(true);
 			rotation.setInterpolator(new DecelerateInterpolator());
 			rotation.setAnimationListener(new AnimationListener(){

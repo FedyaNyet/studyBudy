@@ -8,10 +8,13 @@
     <string name="searchString">Search products..</string>
     <string name="deck_name">Deck Name</string> 
 	<string name="card_back_title">FlipBack</string> 
-	<string name="card_back_description">Back Description</string>  
+	<string name="card_back_description">Back Description</string> 
+    <string name="mascot_desc"></string>
+    <string name="button_flip">Flip</string>
+     
     <integer name="card_flip_time_half">800</integer>
     <integer name="card_flip_time_full">400</integer>
-    <string name="mascot_desc"></string>
     
-
+    <color name="white">#FFFFFF</color>
+    
 </resources>

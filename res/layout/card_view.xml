@@ -2,7 +2,8 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/container"
 	android:layout_width="fill_parent"
-	android:layout_height="fill_parent">
+	android:layout_height="fill_parent"
+	android:background="@drawable/linen_bg">
 	<include android:id="@+id/notelist" layout="@layout/card_front" />
 	<include android:id="@+id/notelist" layout="@layout/card_back" />
 </FrameLayout>
