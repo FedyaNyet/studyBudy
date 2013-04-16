@@ -5,19 +5,21 @@ import java.util.HashMap;
 
 import android.app.ExpandableListActivity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.EditText;
@@ -39,33 +41,29 @@ public class MainActivity extends ExpandableListActivity{
         // define main views.
 		setContentView(R.layout.list_view);
 	    getActionBar().setDisplayHomeAsUpEnabled(false);
-		
+	    
         //define the local views to be used
     	searchBox = (EditText) this.findViewById(R.id.edit_text);
+	    searchBox.getBackground().setAlpha(95);
     	listView = this.getExpandableListView();
         
     	/*
     	 *Add local view listeners 
     	****************************/
-        searchBox.addTextChangedListener(new TextWatcher() {
+    	searchBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+    	    @Override
+    	    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+    	        if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                	Log.d(TAG,"Search: "+v.getText().toString());
+                	listView.requestFocus();
+                	InputMethodManager in = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                	in.hideSoftInputFromWindow(searchBox.getWindowToken(), 0);
+    	            return true;
+    	        }
+    	        return false;
+    	    }
+    	});
 
-			@Override
-			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-				// TODO Auto-generated method stub
-				
-			}
-			@Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-//				_myAdapter.getFilter().filter(s);
-            	Log.d(TAG,"Search: "+s.toString());
-            }
-			@Override
-			public void afterTextChanged(Editable s) {
-				// TODO Auto-generated method stub
-			}
-        });
-
-    	listView.requestFocus();
     	listView.setOnItemClickListener(new OnItemClickListener(){
 			@Override
 			public void onItemClick(AdapterView<?> adapterView, View view, int position,long id) {
@@ -90,6 +88,12 @@ public class MainActivity extends ExpandableListActivity{
         SectionGetter sectionGetter = new SectionGetter();
         sectionGetter.execute(DatabaseAdapter.getGroupedDeckQuery());
         super.onCreate(savedInstanceState);
+    }
+    
+    @Override
+    public void onStart(){
+    	listView.requestFocus();
+        super.onStart();
     }
 
     @Override
@@ -161,6 +165,8 @@ public class MainActivity extends ExpandableListActivity{
 					Deck deck = (Deck) getChild(groupPosition,childPosition);
 					tv.setText(deck.name);
 					tv.setTextColor(Color.BLACK);
+					tv.setBackgroundColor(Color.WHITE);
+					tv.getBackground().setAlpha(95);
 					return item;
 				}
 

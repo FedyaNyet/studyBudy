@@ -114,7 +114,8 @@ public class DatabaseAdapter
 					"deck.name " +
 				"FROM " +
 					"Section sec " +
-				"JOIN Deck deck ON deck.sectionId = sec._id";
+				"JOIN Deck deck ON deck.sectionId = sec._id " +
+				"ORDER BY sec.name ASC";
 	}
 	
 	
