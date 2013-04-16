@@ -1,5 +1,4 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/card_front"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="@color/white"
@@ -13,13 +12,12 @@
     android:layout_marginTop="20dp" >
 
 	<ImageView
-	    android:id="@+id/ImageView01"
+	    android:contentDescription="@string/mascot_desc"
+	    android:src="@drawable/mascot_front" 
 	    android:layout_width="189dp"
 	    android:layout_height="282dp"
 	    android:layout_marginLeft="44dp"
-	    android:layout_marginTop="52dp"
-	    android:contentDescription="@string/mascot_desc"
-	    android:src="@drawable/mascot_front" />
+	    android:layout_marginTop="52dp"/>
 
 	<Button
 	    android:id="@+id/flip_to_back"

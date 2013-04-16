@@ -31,7 +31,7 @@ public class DeckActivity extends Activity {
 		setContentView(R.layout.card_view);
 		cardFront = (RelativeLayout)findViewById(R.id.card_front);
 		cardBack  = (RelativeLayout)findViewById(R.id.card_back);
-		Log.d(TAG,cardBack.toString());
+		cardBack.setVisibility(View.GONE);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
 		long deckId =  getIntent().getExtras().getLong("com.example.studyBudy.deckId");
