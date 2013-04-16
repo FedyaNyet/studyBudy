@@ -77,7 +77,7 @@ public final class DisplayNextView implements Animation.AnimationListener{
 
 				@Override
 				public void onAnimationEnd(Animation animation) {
-					((DeckActivity)sender).rotationComplete();
+					((DeckActivity)sender).cardFlipComplete();
 				}
 
 				@Override

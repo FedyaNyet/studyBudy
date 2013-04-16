@@ -1,36 +1,27 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@android:color/white"
     android:layout_alignParentBottom="true"
     android:layout_alignParentLeft="true"
     android:layout_alignParentRight="true"
     android:layout_alignParentTop="true"
-    android:layout_marginBottom="20dp"
+    android:layout_marginBottom="100dp"
     android:layout_marginLeft="20dp"
     android:layout_marginRight="20dp"
-    android:layout_marginTop="20dp" >
+    android:layout_marginTop="20dp"
+    android:background="@android:color/white"
+    android:gravity="top" >
 
-	<ImageView
-	    android:contentDescription="@string/mascot_desc"
-	    android:src="@drawable/mascot_front" 
-	    android:layout_width="189dp"
-	    android:layout_height="282dp"
-	    android:layout_marginLeft="44dp"
-	    android:layout_marginTop="52dp"/>
 
-	<Button
-	    android:id="@+id/flip_to_back"
-	    style="?android:attr/buttonStyleSmall"
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:layout_alignParentBottom="true"
-	    android:layout_centerHorizontal="true"
-	    android:layout_marginBottom="20dp"
-	    android:maxWidth="@dimen/flip_width"
-	    android:minHeight="48dp"
-	    android:minWidth="@dimen/flip_width"
-	    android:text="@string/button_flip"
-	    android:width="@dimen/flip_width" />
+    <TextView
+        android:id="@+id/question_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:padding="@dimen/textView_padding"
+        android:scrollHorizontally="true"
+        android:text="@string/question_text" />
+
 
 </RelativeLayout>

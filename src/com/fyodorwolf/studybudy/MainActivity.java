@@ -3,6 +3,8 @@ package com.fyodorwolf.studybudy;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.fyodorwolf.studybudy.models.*;
+
 import android.app.ExpandableListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -78,6 +80,7 @@ public class MainActivity extends ExpandableListActivity{
 				deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
                             Intent.FLAG_ACTIVITY_NO_ANIMATION);
 				deckIntent.putExtra("com.example.studyBudy.deckId", deckId);
+				deckIntent.putExtra("com.example.studyBudy.deckName", ((TextView)child.findViewById(android.R.id.text1)).getText());
 		        startActivity(deckIntent);
 				return false;
 			}
@@ -110,7 +113,9 @@ public class MainActivity extends ExpandableListActivity{
 	private class SectionGetter extends AsyncTask<String, Integer, Cursor> {
 
 		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
-
+		final ArrayList<Section> expListData = new ArrayList<Section>();
+		HashMap<Long,Section> sections = new HashMap<Long,Section>();
+		
 		@Override
 		protected void onPreExecute() {}
 
@@ -119,26 +124,29 @@ public class MainActivity extends ExpandableListActivity{
 			return myDB.getCursor(params[0]);
 		}
 		
+		private void handleCursor(Cursor result){
+			Long sectionId = result.getLong(0);
+			String sectionName = result.getString(1);
+			Long deckId = result.getLong(2);
+			String deckName = result.getString(3);
+			//build the dataStores
+			Section section = sections.get(sectionId);
+			if(section == null){
+				section = new Section(sectionId, sectionName);
+				expListData.add(section);
+				sections.put(sectionId, section);
+			}
+			section.decks.add(new Deck(deckId,deckName));
+		}
+		
 		@Override
 		protected void onPostExecute(final Cursor result) {
 			
-			final ArrayList<Section> expListData = new ArrayList<Section>();
-			HashMap<Long,Section> sections = new HashMap<Long,Section>();
-			result.moveToFirst();
-			while(result.moveToNext()){
-				//define query results
-				Long sectionId = result.getLong(0);
-				String sectionName = result.getString(1);
-				Long deckId = result.getLong(2);
-				String deckName = result.getString(3);
-				//build the dataStores
-				Section section = sections.get(sectionId);
-				if(section == null){
-					section = new Section(sectionId, sectionName);
-					expListData.add(section);
-					sections.put(sectionId, section);
+			if(result.moveToFirst()){
+				handleCursor(result);
+				while(result.moveToNext()){
+					handleCursor(result);
 				}
-				section.decks.add(new Deck(deckId,deckName));
 			}
 			
 			listView.setAdapter(new ExpandableListAdapter(){
@@ -251,21 +259,6 @@ public class MainActivity extends ExpandableListActivity{
 				}
 			});
 			this.dialog.hide();
-		}
-	}
-	
-	private class Deck{
-		public String name;
-		public long id;
-		public Deck(long id, String name){
-			this.id = id;
-			this.name = name;
-		}
-	}
-	private class Section extends Deck{
-		public ArrayList<Deck> decks = new ArrayList<Deck>();
-		public Section(long id, String name) {
-			super(id,name);
 		}
 	}
 }

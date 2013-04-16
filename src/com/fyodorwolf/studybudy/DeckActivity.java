@@ -1,5 +1,10 @@
 package com.fyodorwolf.studybudy;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
+import com.fyodorwolf.studybudy.models.*;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -11,8 +16,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.AccelerateInterpolator;
-import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 public class DeckActivity extends Activity {
 
@@ -23,8 +28,8 @@ public class DeckActivity extends Activity {
 	private RelativeLayout cardBack;
 	private boolean isFirstImage = true;
 	boolean animating = false;
-	
-    
+	long cardRotationSpeed = 200;
+    public Deck myDeck;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState){
@@ -32,12 +37,14 @@ public class DeckActivity extends Activity {
 		setContentView(R.layout.card_view);
 		cardFront = (RelativeLayout)findViewById(R.id.card_front);
 		cardBack  = (RelativeLayout)findViewById(R.id.card_back);
+		cardFront.setVisibility(View.GONE);
 		cardBack.setVisibility(View.GONE);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
 		long deckId =  getIntent().getExtras().getLong("com.example.studyBudy.deckId");
-		Log.d(TAG,"SectionID: "+String.valueOf(deckId));
-        setTitle("DeckName");
+		String deckName =  getIntent().getExtras().getString("com.example.studyBudy.deckName");
+		myDeck = new Deck(deckId,deckName);
+        setTitle(deckName);
 		
         DeckGetter getCards = new DeckGetter();
         getCards.execute(DatabaseAdapter.cardsWithDeckIdQuery(deckId));
@@ -72,7 +79,7 @@ public class DeckActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
     
-    public void rotationComplete(){
+    public void cardFlipComplete(){
     	this.animating = false;
     }
 
@@ -85,7 +92,7 @@ public class DeckActivity extends Activity {
 		// Create a new 3D rotation with the supplied parameter
 		// The animation listener is used to trigger the next animation
 		final Flip3dAnimation rotation = new Flip3dAnimation(start, end, centerX, centerY);
-		rotation.setDuration(300);
+		rotation.setDuration(this.cardRotationSpeed);
 		rotation.setFillAfter(true);
 		rotation.setInterpolator(new AccelerateInterpolator());
 		rotation.setAnimationListener(new DisplayNextView(isFirstImage, cardFront, cardBack, this));
@@ -108,21 +115,35 @@ public class DeckActivity extends Activity {
 		protected Cursor doInBackground(String... params) {
 			return myDB.getCursor(params[0]);
 		}
-
+		
+		private void addCardAtCursorHeadToMyDeck(Cursor result){
+			long id = result.getLong(0);
+			String question = result.getString(1);
+			String answer = result.getString(2);
+			Integer status = result.getInt(3);
+			Integer position = result.getInt(4);
+			myDeck.cards.add(new Card(id,question,answer,status,position));
+		}
+		
 		@Override
 		protected void onPostExecute(final Cursor result) {
 
 			Log.d(TAG,"id | questiong | answer | status | position");
-			while(result.moveToNext()){
-				long id = result.getLong(0);
-				String question = result.getString(1);
-				String answer = result.getString(2);
-				Integer status = result.getInt(3);
-				Integer position = result.getInt(4);
-				
-				Log.d(TAG,id+" | "+question+" | "+answer+" | "+status+" | "+position);
+
+			if(result.moveToFirst()){
+				addCardAtCursorHeadToMyDeck(result);
+				while(result.moveToNext()){
+					addCardAtCursorHeadToMyDeck(result);
+				}
+				cardFront.setVisibility(View.VISIBLE);
+				((TextView) cardFront.findViewById(R.id.question_text)).setText(myDeck.cards.get(0).question);
+				((TextView)cardBack.findViewById(R.id.answer_text)).setText(myDeck.cards.get(0).answer);
 			}
-			OnClickListener flipClickedCallback = new OnClickListener() {
+//			for (Iterator<Card> itr = myDeck.cards.iterator(); itr.hasNext();) {
+//				if (itr.next() == null) { itr.remove(); }
+//			}
+			
+			findViewById(R.id.flip_button).setOnClickListener(new OnClickListener() {
 				
 				@Override
 				public void onClick(View view) {
@@ -136,12 +157,7 @@ public class DeckActivity extends Activity {
 						isFirstImage = !isFirstImage;
 					}
 				}
-			};
-			Button flipBack  = (Button)cardFront.findViewById(R.id.flip_to_back);
-			Button flipFront = (Button)cardBack.findViewById(R.id.flip_to_front);
-			
-			flipBack.setOnClickListener(flipClickedCallback); 
-			flipFront.setOnClickListener(flipClickedCallback);  
+			}); 
 		}
 		
 	}
