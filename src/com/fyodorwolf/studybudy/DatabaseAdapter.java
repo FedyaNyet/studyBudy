@@ -106,14 +106,6 @@ public class DatabaseAdapter
 		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId = "+DeckId;
 	}
 	
-	public static String decksWithSectionIdQuery(long sectionId){
-		return "SELECT _id, name FROM Deck where sectionId = "+sectionId;
-	}
-	
-	public static String allSectionsQuery(){
-		return "SELECT _id, name FROM Section";
-	}
-	
 	public static String getGroupedDeckQuery(){
 		return "SELECT " +
 					"sec._id," +

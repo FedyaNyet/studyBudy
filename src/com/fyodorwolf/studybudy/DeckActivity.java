@@ -95,16 +95,27 @@ public class DeckActivity extends Activity {
  ********************************************************************************************************************************************/
 	private class DeckGetter extends AsyncTask<String,Integer,Cursor>{
 
+		private static final String TAG = "DeckGetter";
+		
 		@Override
 		protected Cursor doInBackground(String... params) {
-			Log.d(TAG,"gettingDeck: "+params[0]);
 			return myDB.getCursor(params[0]);
 		}
 
 		@Override
 		protected void onPostExecute(final Cursor result) {
 
-			OnClickListener onClick = new OnClickListener() {
+			Log.d(TAG,"id | questiong | answer | status | position");
+			while(result.moveToNext()){
+				long id = result.getLong(0);
+				String question = result.getString(1);
+				String answer = result.getString(2);
+				Integer status = result.getInt(3);
+				Integer position = result.getInt(4);
+				
+				Log.d(TAG,id+" | "+question+" | "+answer+" | "+status+" | "+position);
+			}
+			OnClickListener flipClickedCallback = new OnClickListener() {
 				
 				@Override
 				public void onClick(View view) {
@@ -119,12 +130,11 @@ public class DeckActivity extends Activity {
 					}
 				}
 			};
-			Log.d(TAG,cardFront.toString());
 			Button flipBack  = (Button)cardFront.findViewById(R.id.flip_to_back);
 			Button flipFront = (Button)cardBack.findViewById(R.id.flip_to_front);
 			
-			flipBack.setOnClickListener(onClick); 
-			flipFront.setOnClickListener(onClick);  
+			flipBack.setOnClickListener(flipClickedCallback); 
+			flipFront.setOnClickListener(flipClickedCallback);  
 		}
 		
 	}
