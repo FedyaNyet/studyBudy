@@ -4,13 +4,33 @@
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	android:background="@drawable/linen_bg">
-	<include
-	    android:id="@+id/card_actions"
-	    android:layout_width="match_parent"
-	    android:layout_height="match_parent"
-	    layout="@layout/card_actions" />
-	<include android:id="@+id/card_back" layout="@layout/card_back" />
 	<include android:id="@+id/card_front" layout="@layout/card_front" />
+	<include android:id="@+id/card_back" layout="@layout/card_back" />
+	<include android:id="@+id/animated_card_front" layout="@layout/card_front" />
 
+	<RelativeLayout
+	    android:layout_width="match_parent"
+	    android:layout_height="match_parent" >
+
+	    <Button
+	        android:id="@+id/flip_button"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentLeft="true"
+	        android:layout_marginBottom="30dp"
+	        android:layout_marginLeft="60dp"
+	        android:text="@string/flip_button" />
+
+	    <Button
+	        android:id="@+id/skip_button"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentRight="true"
+	        android:layout_marginBottom="30dp"
+	        android:layout_marginRight="60dp"
+	        android:text="@string/skip_button" />
+	</RelativeLayout>
 
 </FrameLayout>

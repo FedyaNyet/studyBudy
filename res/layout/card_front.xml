@@ -5,23 +5,23 @@
     android:layout_alignParentLeft="true"
     android:layout_alignParentRight="true"
     android:layout_alignParentTop="true"
+    android:padding="2dp"
+    android:layout_marginTop="20dp"
+    android:layout_marginRight="20dp"
     android:layout_marginBottom="100dp"
     android:layout_marginLeft="20dp"
-    android:layout_marginRight="20dp"
-    android:layout_marginTop="20dp"
-    android:background="@android:color/white"
+    android:background="@color/Gray"
     android:gravity="top" >
-
 
     <TextView
         android:id="@+id/question_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    	android:padding="6dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
-        android:padding="@dimen/textView_padding"
+        android:background="@color/White"
         android:scrollHorizontally="true"
         android:text="@string/question_text" />
-
 
 </RelativeLayout>
