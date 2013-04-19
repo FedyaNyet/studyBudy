@@ -1,5 +1,7 @@
 package com.fyodorwolf.studybudy;
 
+import java.util.Collections;
+
 import com.fyodorwolf.studybudy.ViewSwapper.ViewSwapperListener;
 import com.fyodorwolf.studybudy.models.*;
 
@@ -31,6 +33,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	private RelativeLayout cardFront;
 	private RelativeLayout cardBack;
 	private RelativeLayout animatedCardFront;
+	private RelativeLayout actionsView;
 	private boolean showingCardFront = true;
 	boolean animating = false;
     public Deck myDeck;
@@ -54,9 +57,12 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		cardFront = (RelativeLayout)findViewById(R.id.card_front);
 		cardBack  = (RelativeLayout)findViewById(R.id.card_back);
 		animatedCardFront  = (RelativeLayout)findViewById(R.id.animated_card_front);
+		actionsView = (RelativeLayout)findViewById(R.id.card_actions);
+		
 		cardFront.setVisibility(View.GONE);
 		cardBack.setVisibility(View.GONE);
 		animatedCardFront.setVisibility(View.GONE);
+		actionsView.setVisibility(View.GONE);
 		
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
@@ -80,24 +86,15 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
 	           	 	//vertical swipe
 		            if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-			            // bottom to top swipe
+			            // down swipe
 		            	findViewById(R.id.skip_button).performClick();
 		            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-			    	    // top to bottom swipe
-			    		Log.d(TAG,"top-bottom");
+			    	    // up swipe
+		            	previousCard();
 		            }
 	            }else{
-	           	 	//horizontal swipe
+	           	 	//left or right swipe
 					findViewById(R.id.flip_button).performClick();
-//		            if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-//			            // left to right swipe
-//						if (!showingCardFront)
-//							findViewById(R.id.flip_button).performClick();
-//		            } else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-//			    	    // right to left swipe
-//						if (showingCardFront)
-//							findViewById(R.id.flip_button).performClick();
-//		            }
 	            }
 				return super.onFling(e1, e2, velocityX, velocityY);
 			}
@@ -123,7 +120,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         super.onCreate(savedInstanceState);
 	}
 
-	
 	@Override
 	public void transformPage(View arg0, float arg1) {
 		Log.d(TAG,Float.toString(arg1));
@@ -131,7 +127,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.card, menu);
         return true;
     }
@@ -151,8 +146,51 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 overridePendingTransition(0,0);
                 finish();
                 return true;
+            case R.id.card_menu_shuffle:
+            	Collections.shuffle(myDeck.cards);
+            	findViewById(R.id.skip_button).performClick();
+            	return true;
+            case R.id.card_menu_show_previous:
+            	this.previousCard();
+            	return false;
+            	
         }
         return super.onOptionsItemSelected(item);
+    }
+    
+    private void previousCard(){
+    	if(!animating){
+	    	animating = true;
+			showingCardFront = true;
+	    	myDeckCardIndex = ((myDeckCardIndex + myDeck.cards.size()) - 1) % myDeck.cards.size();
+	    	final CharSequence prevQuestion = myDeck.cards.get(myDeckCardIndex).question;
+	    	final CharSequence prevAnswer = myDeck.cards.get(myDeckCardIndex).answer;
+	    	
+			/*set up the visibility properly*/
+			cardFront.setVisibility(View.VISIBLE);
+			cardBack.setVisibility(View.GONE);
+			animatedCardFront.setVisibility(View.VISIBLE);
+			
+			/*make sure the order is correct to produce the stack effect...*/
+			cardFront.bringToFront();
+			cardBack.bringToFront();
+			animatedCardFront.bringToFront();
+			
+			((TextView) animatedCardFront.findViewById(R.id.question_text)).setText(prevQuestion);
+	
+			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_in_down);
+			anim.setAnimationListener(new AnimationListener(){
+				@Override public void onAnimationEnd(Animation animation) {
+					((TextView) cardBack.findViewById(R.id.answer_text)).setText(prevAnswer);
+					((TextView) cardFront.findViewById(R.id.question_text)).setText(prevQuestion);
+					animatedCardFront.setVisibility(View.GONE);
+			    	animating = false;
+				}
+				@Override public void onAnimationRepeat(Animation animation) {}
+				@Override public void onAnimationStart(Animation animation) {}
+			});
+			animatedCardFront.startAnimation(anim);
+    	}
     }
 
     
@@ -179,56 +217,58 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		
 		@Override
 		protected void onPostExecute(final Cursor result) {
-
-			Log.d(TAG,"id | questiong | answer | status | position");
-
 			if(result.moveToFirst()){
 				addCardAtCursorHeadToMyDeck(result);
 				while(result.moveToNext()){
 					addCardAtCursorHeadToMyDeck(result);
 				}
 				cardFront.setVisibility(View.VISIBLE);
+				actionsView.setVisibility(View.VISIBLE);
 				((TextView) cardFront.findViewById(R.id.question_text)).setText(myDeck.cards.get(myDeckCardIndex).question);
 				((TextView) cardBack.findViewById(R.id.answer_text)).setText(myDeck.cards.get(myDeckCardIndex).answer);
 			}
 			findViewById(R.id.skip_button).setOnClickListener(new OnClickListener(){
 				@Override
 				public void onClick(View v) {
-					View animatedCard;
-					cardFront.setVisibility(View.VISIBLE);
-					if(showingCardFront){
-						CharSequence oldQuestion = ((TextView) cardFront.findViewById(R.id.question_text)).getText();
-						((TextView)animatedCardFront.findViewById(R.id.question_text)).setText(oldQuestion);
-						cardBack.setVisibility(View.GONE);
-						animatedCardFront.setVisibility(View.VISIBLE);
-						animatedCard = animatedCardFront;
-					}else{
-						cardBack.setVisibility(View.VISIBLE);
-						animatedCardFront.setVisibility(View.GONE);
-						animatedCard = cardBack;
-					}
-					/*make sure the order is correct to produce the stack effect...*/
-					cardFront.bringToFront();
-					cardBack.bringToFront();
-					animatedCardFront.bringToFront();
-					
-					myDeckCardIndex = (myDeckCardIndex+1) % myDeck.cards.size();
-					CharSequence newQuestion = myDeck.cards.get(myDeckCardIndex).question+myDeckCardIndex;
-					((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
-
-					Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
-					anim.setAnimationListener(new AnimationListener(){
-						@Override public void onAnimationEnd(Animation animation) {
-							CharSequence newAnswer = myDeck.cards.get(myDeckCardIndex).answer+myDeckCardIndex;
-							((TextView) cardBack.findViewById(R.id.answer_text)).setText(newAnswer);
+					if(!animating){
+						animating = true;
+						View animatedCard;
+						cardFront.setVisibility(View.VISIBLE);
+						if(showingCardFront){
+							CharSequence oldQuestion = ((TextView) cardFront.findViewById(R.id.question_text)).getText();
+							((TextView)animatedCardFront.findViewById(R.id.question_text)).setText(oldQuestion);
 							cardBack.setVisibility(View.GONE);
+							animatedCardFront.setVisibility(View.VISIBLE);
+							animatedCard = animatedCardFront;
+						}else{
+							cardBack.setVisibility(View.VISIBLE);
 							animatedCardFront.setVisibility(View.GONE);
-							showingCardFront = true;
+							animatedCard = cardBack;
 						}
-						@Override public void onAnimationRepeat(Animation animation) {}
-						@Override public void onAnimationStart(Animation animation) {}
-					});
-					animatedCard.startAnimation(anim);
+						/*make sure the order is correct to produce the stack effect...*/
+						cardFront.bringToFront();
+						cardBack.bringToFront();
+						animatedCardFront.bringToFront();
+						
+						myDeckCardIndex = (myDeckCardIndex+1) % myDeck.cards.size();
+						CharSequence newQuestion = myDeck.cards.get(myDeckCardIndex).question;
+						((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
+	
+						Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
+						anim.setAnimationListener(new AnimationListener(){
+							@Override public void onAnimationEnd(Animation animation) {
+								CharSequence newAnswer = myDeck.cards.get(myDeckCardIndex).answer;
+								((TextView) cardBack.findViewById(R.id.answer_text)).setText(newAnswer);
+								cardBack.setVisibility(View.GONE);
+								animatedCardFront.setVisibility(View.GONE);
+								showingCardFront = true;
+								animating=false;
+							}
+							@Override public void onAnimationRepeat(Animation animation) {}
+							@Override public void onAnimationStart(Animation animation) {}
+						});
+						animatedCard.startAnimation(anim);
+					}
 				}
 			});
 			findViewById(R.id.flip_button).setOnClickListener(new OnClickListener() {
