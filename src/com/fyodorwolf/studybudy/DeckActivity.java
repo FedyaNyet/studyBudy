@@ -22,6 +22,7 @@ import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.support.v4.view.ViewPager;
@@ -168,10 +169,12 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	    	animating = true;
 			showingCardFront = true;
 	    	myDeckCardIndex = ((myDeckCardIndex + myDeck.cards.size()) - 1) % myDeck.cards.size();
-	    	final CharSequence prevQuestion = myDeck.cards.get(myDeckCardIndex).question;
-	    	final CharSequence prevAnswer = myDeck.cards.get(myDeckCardIndex).answer;
-	    	final String prevStatus = Integer.toString(myDeck.cards.get(myDeckCardIndex).status);
-	    	final String prevCardId = Long.toString(myDeck.cards.get(myDeckCardIndex).id);
+	    	
+	    	Card myCard = myDeck.cards.get(myDeckCardIndex);
+	    	final CharSequence prevQuestion = myCard.question;
+	    	final CharSequence prevAnswer = myCard.answer;
+	    	final int prevStatus = myCard.getStatusImageResource();
+	    	final String prevCardId = Long.toString(myCard.id);
 	    	
 			/*set up the visibility properly*/
 			animatedCardFront.setVisibility(View.VISIBLE);
@@ -182,7 +185,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			animatedCardFront.bringToFront();
 
 			((TextView) animatedCardFront.findViewById(R.id.question_text)).setText(prevQuestion);
-			((TextView) animatedCardFront.findViewById(R.id.status_text)).setText(prevStatus);
+			((ImageView) animatedCardFront.findViewById(R.id.card_status)).setImageResource(prevStatus);
 			((TextView) animatedCardFront.findViewById(R.id.card_id)).setText(prevCardId);
 	
 			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_in_down);
@@ -190,7 +193,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				@Override public void onAnimationEnd(Animation animation) {
 					((TextView) cardBack.findViewById(R.id.answer_text)).setText(prevAnswer);
 					((TextView) cardFront.findViewById(R.id.question_text)).setText(prevQuestion);
-					((TextView) cardFront.findViewById(R.id.status_text)).setText(prevStatus);
+					((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(prevStatus);
 					((TextView) cardFront.findViewById(R.id.card_id)).setText(prevCardId);
 					cardFront.setVisibility(View.VISIBLE);
 					cardBack.setVisibility(View.GONE);
@@ -236,10 +239,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				cardFront.setVisibility(View.VISIBLE);
 				actionsView.setVisibility(View.VISIBLE);
 				Card myCard = myDeck.cards.get(myDeckCardIndex);
-				Log.d(TAG,Integer.toString(R.id.status_text));
-				Log.d(TAG,Integer.toString(myCard.status));
 				
-				((TextView) cardFront.findViewById(R.id.status_text)).setText(Integer.toString(myCard.status));
+				((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(myCard.getStatusImageResource());
 				((TextView) cardFront.findViewById(R.id.card_id)).setText(Float.toString(myCard.id));
 				((TextView) cardFront.findViewById(R.id.question_text)).setText(myCard.question);
 				((TextView) cardBack.findViewById(R.id.answer_text)).setText(myCard.answer);
@@ -254,12 +255,14 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 						cardFront.setVisibility(View.VISIBLE);
 						if(showingCardFront){
 							
-							CharSequence oldQuestion = ((TextView) cardFront.findViewById(R.id.question_text)).getText();
-							CharSequence cardStatus = ((TextView) cardFront.findViewById(R.id.status_text)).getText();
-							CharSequence oldCardId = ((TextView) cardFront.findViewById(R.id.card_id)).getText();
+							Card myCard = myDeck.cards.get(myDeckCardIndex);
+							
+							CharSequence oldQuestion = myCard.question;
+							int cardStatus = myCard.getStatusImageResource();
+							CharSequence oldCardId = Long.toString(myCard.id);
 
 							((TextView)animatedCardFront.findViewById(R.id.question_text)).setText(oldQuestion);
-							((TextView)animatedCardFront.findViewById(R.id.status_text)).setText(cardStatus);
+							((ImageView)animatedCardFront.findViewById(R.id.card_status)).setImageResource(cardStatus);
 							((TextView)animatedCardFront.findViewById(R.id.card_id)).setText(oldCardId);
 							
 							cardBack.setVisibility(View.GONE);
@@ -278,11 +281,11 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 						myDeckCardIndex = (myDeckCardIndex+1) % myDeck.cards.size();
 						
 						CharSequence newQuestion = myDeck.cards.get(myDeckCardIndex).question;
-						String newStatus = Integer.toString(myDeck.cards.get(myDeckCardIndex).status);
+						int newStatus = myDeck.cards.get(myDeckCardIndex).getStatusImageResource();
 						String newCardId = Long.toString(myDeck.cards.get(myDeckCardIndex).id);
 						
 						((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
-						((TextView) cardFront.findViewById(R.id.status_text)).setText(newStatus);
+						((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(newStatus);
 						((TextView) cardFront.findViewById(R.id.card_id)).setText(newCardId);
 	
 						Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);

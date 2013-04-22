@@ -1,5 +1,7 @@
 package com.fyodorwolf.studybudy.models;
 
+import com.fyodorwolf.studybudy.R;
+
 public class Card{
 
 	public static final int STATUS_NONE = 0;
@@ -18,5 +20,17 @@ public class Card{
 		this.answer = answer;           
 		this.status = status;              
 		this.positionInDeck = positionInDeck;      
+	}
+	
+	public int getStatusImageResource(){
+		switch(this.status){
+		case 1:
+			return R.drawable.correct;
+		case 2:
+			return R.drawable.wrong;
+		default:
+			return android.R.id.empty;
+		}
+		
 	}
 }

@@ -23,7 +23,7 @@
     <string name="wrong_button">Wrong</string>
     <string name="status_text">O</string>
     <string name="card_id">0</string>
-    
+    <string name="card_status">Current card status</string>
     <integer name="card_flip_time_half">800</integer>
     <integer name="card_flip_time_full">400</integer>
     
