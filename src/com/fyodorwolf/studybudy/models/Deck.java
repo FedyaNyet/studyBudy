@@ -12,4 +12,15 @@ public class Deck{
 		this.id = id;
 		this.name = name;
 	}
+	
+	public Card getCardWithId(long _id){
+		//just assume no one will mess with it.. (VERY BAD PROGRAMMING!)
+		Card myCard = new Card(_id, "", "", 0, 0);
+		for(Card card : cards){
+			if(card.id == _id){
+				myCard = card;
+			}
+		}
+		return myCard;
+	}
 }

@@ -107,7 +107,7 @@ public class DatabaseAdapter
 	}
 	
 	public static String setStatusForCard(float cardId, int status){
-		return "";
+		return "UPDATE Card SET status = "+status+" WHERE  _id = "+cardId;
 	}
 	
 	public static String getGroupedDeckQuery(){

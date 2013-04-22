@@ -16,6 +16,7 @@ import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
@@ -77,6 +78,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				//setCard Correct
 				StatusSetter setStatus = new StatusSetter();
 				long card_id = myDeck.cards.get(myDeckCardIndex).id;
+				myDeck.getCardWithId(card_id).status = Card.STATUS_CORRECT;
 		        setStatus.execute(DatabaseAdapter.setStatusForCard(card_id,Card.STATUS_CORRECT));
 			}
 		});
@@ -85,6 +87,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				//setCard incorrect
 				StatusSetter setStatus = new StatusSetter();
 				long card_id = myDeck.cards.get(myDeckCardIndex).id;
+				myDeck.getCardWithId(card_id).status = Card.STATUS_WRONG;
 		        setStatus.execute(DatabaseAdapter.setStatusForCard(card_id,Card.STATUS_WRONG));
 			}
 		});
@@ -94,6 +97,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
 	           	 	if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
 			            // down swipe
+
+	        			findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
 		            	findViewById(R.id.skip_button).performClick();
 		            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
 			    	    // up swipe
@@ -101,6 +106,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		            }
 	            }else{
 	           	 	//left or right swipe
+	    			findViewById(R.id.flip_button).setSoundEffectsEnabled(false);
 					findViewById(R.id.flip_button).performClick();
 	            }
 				return super.onFling(e1, e2, velocityX, velocityY);
@@ -146,6 +152,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 return true;
             case R.id.card_menu_shuffle:
             	Collections.shuffle(myDeck.cards);
+            	findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
             	findViewById(R.id.skip_button).performClick();
             	return true;
             case R.id.card_menu_show_previous:
@@ -163,24 +170,30 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	    	myDeckCardIndex = ((myDeckCardIndex + myDeck.cards.size()) - 1) % myDeck.cards.size();
 	    	final CharSequence prevQuestion = myDeck.cards.get(myDeckCardIndex).question;
 	    	final CharSequence prevAnswer = myDeck.cards.get(myDeckCardIndex).answer;
+	    	final String prevStatus = Integer.toString(myDeck.cards.get(myDeckCardIndex).status);
+	    	final String prevCardId = Long.toString(myDeck.cards.get(myDeckCardIndex).id);
 	    	
 			/*set up the visibility properly*/
-			cardFront.setVisibility(View.VISIBLE);
-			cardBack.setVisibility(View.GONE);
 			animatedCardFront.setVisibility(View.VISIBLE);
 			
 			/*make sure the order is correct to produce the stack effect...*/
 			cardFront.bringToFront();
 			cardBack.bringToFront();
 			animatedCardFront.bringToFront();
-			
+
 			((TextView) animatedCardFront.findViewById(R.id.question_text)).setText(prevQuestion);
+			((TextView) animatedCardFront.findViewById(R.id.status_text)).setText(prevStatus);
+			((TextView) animatedCardFront.findViewById(R.id.card_id)).setText(prevCardId);
 	
 			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_in_down);
 			anim.setAnimationListener(new AnimationListener(){
 				@Override public void onAnimationEnd(Animation animation) {
 					((TextView) cardBack.findViewById(R.id.answer_text)).setText(prevAnswer);
 					((TextView) cardFront.findViewById(R.id.question_text)).setText(prevQuestion);
+					((TextView) cardFront.findViewById(R.id.status_text)).setText(prevStatus);
+					((TextView) cardFront.findViewById(R.id.card_id)).setText(prevCardId);
+					cardFront.setVisibility(View.VISIBLE);
+					cardBack.setVisibility(View.GONE);
 					animatedCardFront.setVisibility(View.GONE);
 			    	animating = false;
 				}
@@ -234,6 +247,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			findViewById(R.id.skip_button).setOnClickListener(new OnClickListener(){
 				@Override
 				public void onClick(View v) {
+	            	findViewById(R.id.skip_button).setSoundEffectsEnabled(true);
 					if(!animating){
 						animating = true;
 						View animatedCard;
@@ -262,8 +276,14 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 						animatedCardFront.bringToFront();
 						
 						myDeckCardIndex = (myDeckCardIndex+1) % myDeck.cards.size();
+						
 						CharSequence newQuestion = myDeck.cards.get(myDeckCardIndex).question;
+						String newStatus = Integer.toString(myDeck.cards.get(myDeckCardIndex).status);
+						String newCardId = Long.toString(myDeck.cards.get(myDeckCardIndex).id);
+						
 						((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
+						((TextView) cardFront.findViewById(R.id.status_text)).setText(newStatus);
+						((TextView) cardFront.findViewById(R.id.card_id)).setText(newCardId);
 	
 						Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
 						anim.setAnimationListener(new AnimationListener(){
@@ -284,6 +304,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			});
 			findViewById(R.id.flip_button).setOnClickListener(new OnClickListener() {
 				@Override public void onClick(View view) {
+					findViewById(R.id.flip_button).setSoundEffectsEnabled(true);
 					if(!animating){
 						animating = true;
 						ViewSwapper rotation;
@@ -320,6 +341,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		@Override
 		protected void onPostExecute(final Cursor result) {
 			//skip to next
+			findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
 			findViewById(R.id.skip_button).performClick();
 			
 		}
