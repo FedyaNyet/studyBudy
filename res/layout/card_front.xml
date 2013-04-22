@@ -13,15 +13,40 @@
     android:background="@color/Gray"
     android:gravity="top" >
 
-    <TextView
-        android:id="@+id/question_text"
-    	android:padding="6dp"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:background="@color/White"
-        android:scrollHorizontally="true"
-        android:text="@string/question_text" />
+        android:background="@color/White" >
+
+	    <TextView
+	        android:id="@+id/question_text"
+	        android:layout_width="match_parent"
+	        android:layout_height="match_parent"
+	        android:layout_alignParentLeft="true"
+	        android:layout_alignParentTop="true"
+	        android:padding="6dp"
+    		android:layout_marginBottom="100dp"
+	        android:scrollHorizontally="true"
+	        android:text="@string/question_text" />
+
+	    <TextView
+	        android:id="@+id/status_text"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentRight="true"
+	        android:text="@string/status_text"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+	    <TextView
+	        android:id="@+id/card_id"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentLeft="true"
+	        android:text="@string/card_id"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+        
+    </RelativeLayout>
 
 </RelativeLayout>

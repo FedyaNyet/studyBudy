@@ -1,6 +1,11 @@
 package com.fyodorwolf.studybudy.models;
 
 public class Card{
+
+	public static final int STATUS_NONE = 0;
+	public static final int STATUS_CORRECT = 1;
+	public static final int STATUS_WRONG = 2;
+	
 	public long id;
 	public String question;
 	public String answer;

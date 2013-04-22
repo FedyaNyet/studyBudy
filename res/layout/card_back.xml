@@ -12,16 +12,41 @@
     android:layout_marginLeft="20dp"
     android:background="@color/Gray"
     android:gravity="top" >
-	
-    <TextView
-        android:id="@+id/answer_text"
+
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:background="@color/White"
-        android:padding="6dp"
-        android:scrollHorizontally="true"
-        android:text="@string/answer_text" />
+        android:background="@color/White">
+	
+	    <TextView
+	        android:id="@+id/answer_text"
+	        android:layout_width="match_parent"
+	        android:layout_height="match_parent"
+	        android:padding="6dp"
+		    android:layout_marginBottom="100dp"
+	        android:scrollHorizontally="true"
+	        android:text="@string/answer_text" />
+
+	    <ImageView
+	        android:id="@+id/button_wrong"
+	        android:layout_width="75dp"
+	        android:layout_height="75dp"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentRight="true"
+	        android:layout_marginBottom="30dp"
+	        android:layout_marginRight="30dp"
+	        android:src="@drawable/wrong" />
+
+	    <ImageView
+	        android:id="@+id/button_correct"
+	        android:layout_width="75dp"
+	        android:layout_height="75dp"
+	        android:layout_alignParentBottom="true"
+	        android:layout_alignParentLeft="true"
+	        android:layout_marginBottom="30dp"
+	        android:layout_marginLeft="30dp"
+	        android:src="@drawable/correct" />
+
+    </RelativeLayout>
 
 </RelativeLayout>

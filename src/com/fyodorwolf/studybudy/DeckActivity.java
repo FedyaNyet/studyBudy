@@ -72,20 +72,27 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		
         setTitle(myDeck.name);
 
-        gestureDetector = new GestureDetector(this, new SimpleOnGestureListener(){
-			@Override
-			public boolean onDoubleTap(MotionEvent e) {
-				// TODO Auto-generated method stub
-				Log.d(TAG,"onDoubleTap");
-				return super.onDoubleTap(e);
+        findViewById(R.id.button_correct).setOnClickListener(new OnClickListener(){
+			@Override public void onClick(View v) {
+				//setCard Correct
+				StatusSetter setStatus = new StatusSetter();
+				long card_id = myDeck.cards.get(myDeckCardIndex).id;
+		        setStatus.execute(DatabaseAdapter.setStatusForCard(card_id,Card.STATUS_CORRECT));
 			}
-			
-			@Override
-			public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-				// TODO Auto-generated method stub
+		});
+        findViewById(R.id.button_wrong).setOnClickListener(new OnClickListener(){
+			@Override public void onClick(View v) {
+				//setCard incorrect
+				StatusSetter setStatus = new StatusSetter();
+				long card_id = myDeck.cards.get(myDeckCardIndex).id;
+		        setStatus.execute(DatabaseAdapter.setStatusForCard(card_id,Card.STATUS_WRONG));
+			}
+		});
+        
+        gestureDetector = new GestureDetector(this, new SimpleOnGestureListener(){
+			@Override public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
 	            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
-	           	 	//vertical swipe
-		            if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+	           	 	if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
 			            // down swipe
 		            	findViewById(R.id.skip_button).performClick();
 		            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
@@ -98,17 +105,13 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	            }
 				return super.onFling(e1, e2, velocityX, velocityY);
 			}
-			
-			@Override
-			public void onLongPress(MotionEvent e) {
-				Log.d(TAG,"onLongPress");
+			@Override public boolean onDoubleTap(MotionEvent e) {
+				return super.onDoubleTap(e);
+			}
+			@Override public void onLongPress(MotionEvent e) {
 				super.onLongPress(e);
 			}
-			
-			@Override
-			public boolean onSingleTapConfirmed(MotionEvent e) {
-				// TODO Auto-generated method stub
-				Log.d(TAG,"onSingleTapConfirmed: \n" + e.toString());
+			@Override public boolean onSingleTapConfirmed(MotionEvent e) {
 				return super.onSingleTapConfirmed(e);	
 			}
         });
@@ -120,19 +123,14 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         super.onCreate(savedInstanceState);
 	}
 
-	@Override
-	public void transformPage(View arg0, float arg1) {
-		Log.d(TAG,Float.toString(arg1));
-	}
+	@Override public void transformPage(View arg0, float arg1) {}
 	
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    @Override  public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.card, menu);
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    @Override public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
                 // This is called when the Home (Up) button is pressed
@@ -224,8 +222,14 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				}
 				cardFront.setVisibility(View.VISIBLE);
 				actionsView.setVisibility(View.VISIBLE);
-				((TextView) cardFront.findViewById(R.id.question_text)).setText(myDeck.cards.get(myDeckCardIndex).question);
-				((TextView) cardBack.findViewById(R.id.answer_text)).setText(myDeck.cards.get(myDeckCardIndex).answer);
+				Card myCard = myDeck.cards.get(myDeckCardIndex);
+				Log.d(TAG,Integer.toString(R.id.status_text));
+				Log.d(TAG,Integer.toString(myCard.status));
+				
+				((TextView) cardFront.findViewById(R.id.status_text)).setText(Integer.toString(myCard.status));
+				((TextView) cardFront.findViewById(R.id.card_id)).setText(Float.toString(myCard.id));
+				((TextView) cardFront.findViewById(R.id.question_text)).setText(myCard.question);
+				((TextView) cardBack.findViewById(R.id.answer_text)).setText(myCard.answer);
 			}
 			findViewById(R.id.skip_button).setOnClickListener(new OnClickListener(){
 				@Override
@@ -235,8 +239,15 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 						View animatedCard;
 						cardFront.setVisibility(View.VISIBLE);
 						if(showingCardFront){
+							
 							CharSequence oldQuestion = ((TextView) cardFront.findViewById(R.id.question_text)).getText();
+							CharSequence cardStatus = ((TextView) cardFront.findViewById(R.id.status_text)).getText();
+							CharSequence oldCardId = ((TextView) cardFront.findViewById(R.id.card_id)).getText();
+
 							((TextView)animatedCardFront.findViewById(R.id.question_text)).setText(oldQuestion);
+							((TextView)animatedCardFront.findViewById(R.id.status_text)).setText(cardStatus);
+							((TextView)animatedCardFront.findViewById(R.id.card_id)).setText(oldCardId);
+							
 							cardBack.setVisibility(View.GONE);
 							animatedCardFront.setVisibility(View.VISIBLE);
 							animatedCard = animatedCardFront;
@@ -296,9 +307,22 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					}
 				}
 			}); 
-		}
-		
-	}
+		}		
+	}//E:DeckGetter
 
+	private class StatusSetter extends AsyncTask<String,Integer,Cursor>{
+
+		@Override
+		protected Cursor doInBackground(String... params) {
+			return myDB.getCursor(params[0]);
+		}
+
+		@Override
+		protected void onPostExecute(final Cursor result) {
+			//skip to next
+			findViewById(R.id.skip_button).performClick();
+			
+		}
+	}//E:StatusSetter
 	
 }

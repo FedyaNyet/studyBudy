@@ -19,7 +19,11 @@
     <string name="skip_button">Skip</string>
     <string name="card_menu_show_previous">Show Previous Card</string>
     <string name="card_menu_shuffle">Shuff Deck</string>
-     
+    <string name="correct_button">Correct</string>
+    <string name="wrong_button">Wrong</string>
+    <string name="status_text">O</string>
+    <string name="card_id">0</string>
+    
     <integer name="card_flip_time_half">800</integer>
     <integer name="card_flip_time_full">400</integer>
     

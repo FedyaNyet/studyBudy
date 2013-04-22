@@ -106,6 +106,10 @@ public class DatabaseAdapter
 		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId = "+DeckId;
 	}
 	
+	public static String setStatusForCard(float cardId, int status){
+		return "";
+	}
+	
 	public static String getGroupedDeckQuery(){
 		return "SELECT " +
 					"sec._id," +

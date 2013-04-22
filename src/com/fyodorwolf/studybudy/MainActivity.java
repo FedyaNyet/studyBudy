@@ -258,6 +258,9 @@ public class MainActivity extends ExpandableListActivity{
 					
 				}
 			});
+			int count = listView.getExpandableListAdapter().getGroupCount();
+			for (int position = 0; position < count; position++)
+			    listView.expandGroup(position);
 			this.dialog.hide();
 		}
 	}
