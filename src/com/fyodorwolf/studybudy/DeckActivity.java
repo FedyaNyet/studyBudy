@@ -48,6 +48,12 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     private static final int SWIPE_THRESHOLD_VELOCITY = 2000;
 	private static final long ANIMATION_DURATION = 300;
 
+	private static final int SHOWING_ALL = 0;
+	private static final int SHOWING_CORRECT = 1;
+	private static final int SHOWING_WRONG = 2;
+	
+	private int nowShowing = SHOWING_ALL;
+	
     GestureDetector gestureDetector;
     
 	@Override
@@ -120,7 +126,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	String queryString = DatabaseAdapter.getCardsWithDeckIdQuery(deckId);
     	if(cardIds != null){
     		queryString = DatabaseAdapter.getCardsWithIdsQuery(cardIds);
-    		Log.d(TAG,queryString);
     	}
     	query.execute(queryString);
     	
@@ -132,6 +137,27 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     @Override  public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.card, menu);
         return true;
+    }
+    
+    @Override public boolean onPrepareOptionsMenu(Menu menu){
+    	switch (nowShowing){
+			case SHOWING_WRONG:
+				menu.findItem(R.id.card_menu_view_all).setVisible(true);
+				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
+				menu.findItem(R.id.card_menu_view_wrong).setVisible(false);
+				break;
+			case SHOWING_CORRECT:
+				menu.findItem(R.id.card_menu_view_all).setVisible(true);
+				menu.findItem(R.id.card_menu_view_correct).setVisible(false);
+				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
+				break;
+			default:
+				menu.findItem(R.id.card_menu_view_all).setVisible(false);
+				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
+				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
+				break;
+		}
+		return true;
     }
 
     @Override public boolean onOptionsItemSelected(MenuItem item) {
@@ -215,7 +241,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				Integer position = result.getInt(4);
 				Card newCard = new Card(id,question,answer,status,position);
 				myDeck.cards.add(newCard);
-				Log.d(TAG, newCard.toString());
 			}
 			cardFront.setVisibility(View.VISIBLE);
 			actionsView.setVisibility(View.VISIBLE);

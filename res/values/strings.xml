@@ -7,6 +7,8 @@
     <string name="card_menu_add_new_card">Add New Card</string>
     <string name="card_menu_remove_current_card">Remove This Card</string>
     <string name="card_menu_view_all">View All Cards</string>
+    <string name="card_menu_view_correct">View Correct Cards</string>
+    <string name="card_menu_view_wrong">View Wrong Cards</string>
     <string name="search_hint">Search&#8230;</string>
     <string name="deck_name">Deck Name</string> 
 	<string name="card_back_title">Flip Back</string> 

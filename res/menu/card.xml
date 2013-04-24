@@ -16,13 +16,23 @@
         android:showAsAction="never"
         android:title="@string/card_menu_view_all"/>
     <item
-        android:id="@+id/card_menu_show_previous"
+        android:id="@+id/card_menu_view_correct"
         android:orderInCategory="103"
+        android:showAsAction="never"
+        android:title="@string/card_menu_view_correct"/>
+    <item
+        android:id="@+id/card_menu_view_wrong"
+        android:orderInCategory="103"
+        android:showAsAction="never"
+        android:title="@string/card_menu_view_wrong"/>
+    <item
+        android:id="@+id/card_menu_show_previous"
+        android:orderInCategory="104"
         android:showAsAction="never"
         android:title="@string/card_menu_show_previous"/>
     <item
         android:id="@+id/card_menu_shuffle"
-        android:orderInCategory="104"
+        android:orderInCategory="105"
         android:showAsAction="never"
         android:title="@string/card_menu_shuffle"/>
 
