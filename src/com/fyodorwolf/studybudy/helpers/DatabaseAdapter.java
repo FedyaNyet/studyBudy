@@ -79,43 +79,43 @@ public class DatabaseAdapter
 		}
     }
     
-	public Cursor searchTerm(String term){
-		return getCursor(
+	public static String getSearchTermQuery(String term){
+		return 
 			"SELECT " +
-			"	card._id 'Card._id', dec._id 'Deck._id', sec._id 'Section._id'"+
+				"sec._id," +
+				"sec.name," +
+				"deck._id," +
+				"deck.name, " +
+				"card._id " +
 			"FROM " +
-			"	Card card , Deck dec, Section sec"+
+			"	Card card "+
+			"JOIN Deck deck ON card.deckId = deck._id " +
+			"JOIN Section sec ON deck.sectionId = sec._id " +
 			"WHERE " +
-			"	(	card.deckId = dec._id " +
-			"		and " +
-			"		dec.sectionId = sec._id" +
-			"	)"+
-			"	and " +
-			"	(	card.question LIKE '%"+term+"%' " +
-			"       or " +
-			"       card.answer LIKE '%"+term+"%' " +
-			"       or " +
-			"       dec.title LIKE '%"+term+"%'" +
-			"       or " +
-			"       sec.name LIKE '%"+term+"%'" +
-			"	)"
-		);
+				"sec.name LIKE '%"+term+"%'" +
+				"or " +
+				"deck.name LIKE '%"+term+"%'" +
+				"or " +
+				"card.question LIKE '%"+term+"%' " +
+				"or " +
+				"card.answer LIKE '%"+term+"%' " +
+			"ORDER BY sec.name ASC";
 	}
 	
-	public static String cardsWithIds(long[] cardIds) {
+	public static String getCardsWithIdsQuery(long[] cardIds) {
     	String ids = "";
     	for(long cardId:cardIds){
     		ids += Long.toString(cardId)+","; 
     	}
-    	Log.d(TAG,ids.substring(0,ids.length()-1));
-		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId IN ("+ids+")";
+    	ids = ids.substring(0,ids.length()-1);
+		return "SELECT _id, question, answer, status, numberInDeck FROM Card where _id IN ("+ids+")";
 	}
 	
-	public static String cardsWithDeckIdQuery(long DeckId){
+	public static String getCardsWithDeckIdQuery(long DeckId){
 		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId = "+DeckId;
 	}
 	
-	public static String setStatusForCard(float cardId, int status){
+	public static String getCardUpdateStatusQuery(float cardId, int status){
 		return "UPDATE Card SET status = "+status+" WHERE  _id = "+cardId;
 	}
 	

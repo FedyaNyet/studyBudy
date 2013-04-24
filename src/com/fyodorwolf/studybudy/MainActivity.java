@@ -38,8 +38,9 @@ public class MainActivity extends ExpandableListActivity{
 	private DatabaseAdapter myDB;
 	private static final String TAG = "MainActivity";
 	
-	final ArrayList<Section> _myExpListData = new ArrayList<Section>();
+	ArrayList<Section> _myExpListData = new ArrayList<Section>();
 	HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
+	protected boolean searching = false;
 	
       
     @Override
@@ -52,30 +53,36 @@ public class MainActivity extends ExpandableListActivity{
     	searchBox = (EditText) this.findViewById(R.id.edit_text);
 	    searchBox.getBackground().setAlpha(95);
     	listView = this.getExpandableListView();
-    	
-        /* RUN QUERY ON ANOTHER THREAD */
 		myDB = DatabaseAdapter.getInstance(this);
-    	QueryRunner sectionsQuery = new QueryRunner(myDB);
-    	QueryRunnerListener gotSectionsListener= new QueryRunnerListener(){
-			@Override public void beforeDoInBackground() {}
-			@Override public void onPostExcecute(Cursor cards) {
-				gotSections(cards);
-			}
-		};
-        sectionsQuery.setQueryRunnerListener(gotSectionsListener);
-        sectionsQuery.execute(DatabaseAdapter.getGroupedDeckQuery());
-        
 
+		/* SHOW ALL SECTIONS AND DECKS */
+    	preformNormalSearch();
+    	
     	/* SET ACTION LISTENERS */
     	searchBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
     	    @Override
-    	    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+    	    public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
     	        if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                	Log.d(TAG,"Search: "+v.getText().toString());
-                	listView.requestFocus();
-                	InputMethodManager in = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                	in.hideSoftInputFromWindow(searchBox.getWindowToken(), 0);
-    	            return true;
+    	        	String searchString = textView.getText().toString();
+    	        	if(searchString.isEmpty()){
+    	        		searching = false;
+    	            	preformNormalSearch();
+    	        	}else{
+    	        		searching = true;
+    	        		Log.d(TAG,"Search: "+searchString);
+                    	QueryRunner sectionsQuery = new QueryRunner(myDB);
+                        sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
+                			@Override public void beforeDoInBackground() {}
+                			@Override public void onPostExcecute(Cursor cards) {
+                				gotSections(cards);
+                            	listView.requestFocus();
+                            	InputMethodManager in = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                            	in.hideSoftInputFromWindow(searchBox.getWindowToken(), 0);
+                			}
+                		});
+                        sectionsQuery.execute(DatabaseAdapter.getSearchTermQuery(searchString));
+    	        	}
+                    return true;
     	        }
     	        return false;
     	    }
@@ -93,9 +100,20 @@ public class MainActivity extends ExpandableListActivity{
 				Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
 				deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
                             Intent.FLAG_ACTIVITY_NO_ANIMATION);
-				deckIntent.putExtra("com.example.studyBudy.deckId", deckId);
-				deckIntent.putExtra("com.example.studyBudy.deckName", ((TextView)child.findViewById(android.R.id.text1)).getText());
-		        startActivity(deckIntent);
+				deckIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
+				deckIntent.putExtra("com.fyodorwolf.studyBudy.deckName", ((TextView)child.findViewById(android.R.id.text1)).getText());
+				Deck clickedDeck = _myExpListData.get(groupIdx).getDeckById(deckId);
+				if(searching && clickedDeck.cards.size()>0){
+					//build an array of card id's to show in the next activity...
+					long[] cardIds = new long[clickedDeck.cards.size()];
+					int cardIdIdx = 0;
+					for(Card searchCard : clickedDeck.cards){
+						cardIds[cardIdIdx] = searchCard.id;
+						cardIdIdx++;
+					}
+					deckIntent.putExtra("com.fyodorwolf.studyBudy.cardIds", cardIds);
+				}
+				startActivity(deckIntent);
 				return false;
 			}
 		});
@@ -103,18 +121,61 @@ public class MainActivity extends ExpandableListActivity{
         super.onCreate(savedInstanceState);
     }
     
-    protected void gotSections(Cursor result) {
+    private void preformNormalSearch() {  
+       	/* RUN QUERY ON ANOTHER THREAD */
+    	QueryRunner sectionsQuery = new QueryRunner(myDB);
+        sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
+			@Override public void beforeDoInBackground() {}
+			@Override public void onPostExcecute(Cursor cards) {
+				gotSections(cards);
+			}
+		});
+        sectionsQuery.execute(DatabaseAdapter.getGroupedDeckQuery());
+		
+	}
 
-		if(result.moveToFirst()){
-			handleCursor(result);
+	@Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.section, menu);
+        return true;
+    }
+    
+    @Override
+    public void onStart(){
+    	listView.requestFocus();
+        super.onStart();
+    }
+
+    protected void gotSections(Cursor result) {
+    	_myExpListData = new ArrayList<Section>();
+    	_sectionIdMap = new HashMap<Long,Section>();
+    	
+		if(result.getCount()>0){
+	    	result.moveToPosition(-1);
 			while(result.moveToNext()){
-				handleCursor(result);
+				Long sectionId = result.getLong(0);
+				String sectionName = result.getString(1);
+				Long deckId = result.getLong(2);
+				String deckName = result.getString(3);
+				//build the dataStores
+				Section section = _sectionIdMap.get(sectionId);
+				if(section == null){
+					section = new Section(sectionId, sectionName);
+					_myExpListData.add(section);
+					_sectionIdMap.put(sectionId, section);
+				}
+				section.addDeck(new Deck(deckId,deckName));//won't allow repeats..
+				//cursor row may have additional column when searching with matching card ids...
+				if(result.getColumnCount() > 4){
+					long cardId = result.getLong(4);
+					Log.d(TAG,Long.toString(sectionId)+','+sectionName+','+Long.toString(deckId)+','+deckName+','+Long.toString(cardId));
+					section.getDeckById(deckId).cards.add(new Card(cardId));
+				}
 			}
 		}
-
+		
 		listView.setAdapter(new ExpandableListAdapter(){
-
-
 			@Override
 			public Object getChild(int groupPosition, int childPosition) {
 				return _myExpListData.get(groupPosition).decks.get(childPosition);
@@ -183,34 +244,5 @@ public class MainActivity extends ExpandableListActivity{
 		int count = listView.getExpandableListAdapter().getGroupCount();
 		for (int position = 0; position < count; position++)
 		    listView.expandGroup(position);
-	}
-    
-    @Override
-    public void onStart(){
-    	listView.requestFocus();
-        super.onStart();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.section, menu);
-        return true;
-    }
-
-	
-	private void handleCursor(Cursor result){
-		Long sectionId = result.getLong(0);
-		String sectionName = result.getString(1);
-		Long deckId = result.getLong(2);
-		String deckName = result.getString(3);
-		//build the dataStores
-		Section section = _sectionIdMap.get(sectionId);
-		if(section == null){
-			section = new Section(sectionId, sectionName);
-			_myExpListData.add(section);
-			_sectionIdMap.put(sectionId, section);
-		}
-		section.decks.add(new Deck(deckId,deckName));
 	}
 }
