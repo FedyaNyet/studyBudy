@@ -119,6 +119,10 @@ public class DatabaseAdapter
 		return "UPDATE Card SET status = "+status+" WHERE  _id = "+cardId;
 	}
 	
+	public static String getCardsWithDeckIdAndStatusQuery(long DeckId, int status){
+		return getCardsWithDeckIdQuery(DeckId)+" and status = "+status;
+	}
+	
 	public static String getGroupedDeckQuery(){
 		return "SELECT " +
 					"sec._id," +

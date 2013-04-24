@@ -72,7 +72,6 @@ public class MainActivity extends ExpandableListActivity{
     	        		Log.d(TAG,"Search: "+searchString);
                     	QueryRunner sectionsQuery = new QueryRunner(myDB);
                         sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
-                			@Override public void beforeDoInBackground() {}
                 			@Override public void onPostExcecute(Cursor cards) {
                 				gotSections(cards);
                             	listView.requestFocus();
@@ -125,7 +124,6 @@ public class MainActivity extends ExpandableListActivity{
        	/* RUN QUERY ON ANOTHER THREAD */
     	QueryRunner sectionsQuery = new QueryRunner(myDB);
         sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
-			@Override public void beforeDoInBackground() {}
 			@Override public void onPostExcecute(Cursor cards) {
 				gotSections(cards);
 			}

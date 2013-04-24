@@ -87,7 +87,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         
         /* DEFINE BUTTON PRESSES */
         final QueryRunnerListener setStatusQueryListener = new QueryRunnerListener(){
-			@Override public void beforeDoInBackground() {}
 			@Override public void onPostExcecute(Cursor cards) {
 				findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
 				findViewById(R.id.skip_button).performClick();
@@ -118,7 +117,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	myDB = DatabaseAdapter.getInstance(this);
     	QueryRunner query = new QueryRunner(myDB);
     	query.setQueryRunnerListener(new QueryRunnerListener(){
-			@Override public void beforeDoInBackground() {}
 			@Override public void onPostExcecute(Cursor cards) {
 				gotCards(cards);
 			}
@@ -161,6 +159,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     }
 
     @Override public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
         switch (item.getItemId()) {
             case android.R.id.home:
                 // Pressed home (Up) 
@@ -172,18 +171,47 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 startActivity(parentActivityIntent);
                 overridePendingTransition(0,0);
                 finish();
-                return true;
+            	break;
             case R.id.card_menu_shuffle:
             	Collections.shuffle(myDeck.cards);
             	findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
             	findViewById(R.id.skip_button).performClick();
-            	return true;
+            	break;
             case R.id.card_menu_show_previous:
             	this.previousCard();
-            	return false;
-            	
+            	break;
+            case R.id.card_menu_view_correct:
+            	nowShowing = SHOWING_CORRECT;
+            	QueryRunner getCorrectCards = new QueryRunner(myDB);
+            	getCorrectCards.setQueryRunnerListener(new QueryRunnerListener(){
+    				@Override public void onPostExcecute(Cursor cards) {
+    					gotCards(cards);
+    				}
+            	});
+            	getCorrectCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeck.id, Card.STATUS_CORRECT));
+            	break;
+            case R.id.card_menu_view_wrong:
+            	nowShowing = SHOWING_WRONG;
+            	QueryRunner getWrongCards = new QueryRunner(myDB);
+            	getWrongCards.setQueryRunnerListener(new QueryRunnerListener(){
+    				@Override public void onPostExcecute(Cursor cards) {
+    					gotCards(cards);
+    				}
+            	});
+            	getWrongCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeck.id, Card.STATUS_WRONG));
+            	break;
+            case R.id.card_menu_view_all:
+            	nowShowing = SHOWING_ALL;
+            	QueryRunner getAllCards = new QueryRunner(myDB);
+            	getAllCards.setQueryRunnerListener(new QueryRunnerListener(){
+    				@Override public void onPostExcecute(Cursor cards) {
+    					gotCards(cards);
+    				}
+            	});
+            	getAllCards.execute(DatabaseAdapter.getCardsWithDeckIdQuery(myDeck.id));
+            	break;
         }
-        return super.onOptionsItemSelected(item);
+        return true;
     }
     
     private void previousCard(){
@@ -231,6 +259,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     
     public void gotCards(Cursor cards){
     	Cursor result = cards;
+    	myDeck.cards.clear();
+    	myDeckCardIndex = 0;
 		if(result.getCount()>0){
 	    	result.moveToPosition(-1);
 			while(result.moveToNext()){

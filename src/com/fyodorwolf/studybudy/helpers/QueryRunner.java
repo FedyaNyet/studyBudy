@@ -20,7 +20,6 @@ import android.os.AsyncTask;
 		this._myAdapter = dbAdapter;
 		this._myListener = new QueryRunnerListener(){ 
 			@Override public void onPostExcecute(Cursor cards){}
-			@Override public void beforeDoInBackground() {}
 		};
 	}
 
@@ -28,7 +27,6 @@ import android.os.AsyncTask;
 	
 	@Override
 	protected Cursor doInBackground(String... params) {
-		_myListener.beforeDoInBackground();
 		return _myAdapter.getCursor(params[0]);
 	}
 	
@@ -43,7 +41,6 @@ import android.os.AsyncTask;
 	}
 	
 	public interface QueryRunnerListener{
-		public void beforeDoInBackground();
 		public void onPostExcecute(Cursor cards);
 	}
 	
