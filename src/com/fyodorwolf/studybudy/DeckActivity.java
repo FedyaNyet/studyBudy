@@ -46,6 +46,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	private static final int SWIPE_MIN_DISTANCE = 120;
     private static final int SWIPE_MAX_OFF_PATH = 250;
     private static final int SWIPE_THRESHOLD_VELOCITY = 2000;
+	private static final long ANIMATION_DURATION = 300;
 
     GestureDetector gestureDetector;
     
@@ -183,6 +184,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			((TextView) animatedCardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
 	
 			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_in_down);
+			anim.setDuration(ANIMATION_DURATION);
 			anim.setAnimationListener(new AnimationListener(){
 				@Override public void onAnimationEnd(Animation animation) {
 					((TextView) cardBack.findViewById(R.id.answer_text)).setText(prevAnswer);
@@ -262,7 +264,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 							rotation = new ViewFlipper(cardBack, cardFront);
 							rotation.setDirection(ViewFlipper.ROTATE_RIGHT);
 						}
-						rotation.setDuration(400);
+						rotation.setDuration(ANIMATION_DURATION);
 						rotation.addViewSwapperListener(new ViewSwapperListener(){
 							@Override public void onViewSwapperStart() {}
 							@Override public void onViewSwapperHalfComplete() {}
@@ -320,6 +322,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					((TextView) cardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
 
 					Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
+					anim.setDuration(ANIMATION_DURATION);
 					anim.setAnimationListener(new AnimationListener(){
 						@Override public void onAnimationEnd(Animation animation) {
 							CharSequence newAnswer = myDeck.cards.get(myDeckCardIndex).answer;
