@@ -1,4 +1,4 @@
-package com.fyodorwolf.studybudy;
+package com.fyodorwolf.studybudy.helpers;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -100,6 +100,15 @@ public class DatabaseAdapter
 			"       sec.name LIKE '%"+term+"%'" +
 			"	)"
 		);
+	}
+	
+	public static String cardsWithIds(long[] cardIds) {
+    	String ids = "";
+    	for(long cardId:cardIds){
+    		ids += Long.toString(cardId)+","; 
+    	}
+    	Log.d(TAG,ids.substring(0,ids.length()-1));
+		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId IN ("+ids+")";
 	}
 	
 	public static String cardsWithDeckIdQuery(long DeckId){

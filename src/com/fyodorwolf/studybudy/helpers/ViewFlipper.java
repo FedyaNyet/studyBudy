@@ -1,4 +1,4 @@
-package com.fyodorwolf.studybudy;
+package com.fyodorwolf.studybudy.helpers;
 
 import android.graphics.Camera;
 import android.graphics.Matrix;
@@ -9,7 +9,7 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.Transformation;
 import android.view.animation.DecelerateInterpolator;
 
-public final class ViewSwapper implements Runnable{
+public final class ViewFlipper implements Runnable{
 	
 	//used with Log.d(TAG,"some string");
 	private static final String TAG = "ViewSwapper"; 
@@ -27,7 +27,7 @@ public final class ViewSwapper implements Runnable{
 		@Override public void onViewSwapperComplete() {}
 	};
 	
-	public ViewSwapper(View fromView, View toView) {
+	public ViewFlipper(View fromView, View toView) {
 		this.fromView = fromView;
 		this.toView = toView;
 	}
@@ -55,7 +55,7 @@ public final class ViewSwapper implements Runnable{
 		final float centerY = fromView.getHeight() / 2.0f;
 		
 		final Flip3dAnimation rotation;
-		if(this._direction == ViewSwapper.ROTATE_LEFT){
+		if(this._direction == ViewFlipper.ROTATE_LEFT){
 			rotation = new Flip3dAnimation(0, 90, centerX, centerY);
 		}else{
 			rotation = new Flip3dAnimation(0, -90, centerX, centerY);
@@ -71,7 +71,7 @@ public final class ViewSwapper implements Runnable{
 				toView.requestFocus();
 				
 				Flip3dAnimation rotation_continue;
-				if(_direction == ViewSwapper.ROTATE_LEFT){
+				if(_direction == ViewFlipper.ROTATE_LEFT){
 					rotation_continue = new Flip3dAnimation(-90, 0, centerX, centerY);
 				}else{
 					rotation_continue = new Flip3dAnimation(90, 0, centerX, centerY);
