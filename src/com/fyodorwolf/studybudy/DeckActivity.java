@@ -1,6 +1,8 @@
 package com.fyodorwolf.studybudy;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.fyodorwolf.studybudy.helpers.QueryRunner;
@@ -40,7 +42,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	private RelativeLayout actionsView;
 	private boolean showingCardFront = true;
 	boolean animating = false;
-    public Deck myDeck;
+	public StudyDesk deckExtras;
 	int myDeckCardIndex = 0;
     
 	private static final int SWIPE_MIN_DISTANCE = 120;
@@ -81,9 +83,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		long deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
 		String deckName =  getIntent().getExtras().getString("com.fyodorwolf.studyBudy.deckName");
 		long[] cardIds =  getIntent().getExtras().getLongArray("com.fyodorwolf.studyBudy.cardIds");
-		myDeck = new Deck(deckId,deckName);
+		deckExtras = new StudyDesk(new Deck(deckId,deckName));
 		
-        setTitle(myDeck.name);
+        setTitle(deckName);
         
         /* DEFINE BUTTON PRESSES */
         final QueryRunnerListener setStatusQueryListener = new QueryRunnerListener(){
@@ -97,8 +99,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				//setCard Correct
 				QueryRunner setStatusQuery = new QueryRunner(myDB);
 				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
-				long card_id = myDeck.cards.get(myDeckCardIndex).id;
-				myDeck.getCardWithId(card_id).status = Card.STATUS_CORRECT;
+				long card_id = deckExtras.getIdOfCardAtIndex(myDeckCardIndex);
+				deckExtras.setCardStatus(card_id, Card.STATUS_CORRECT);
 				setStatusQuery.execute(DatabaseAdapter.getCardUpdateStatusQuery(card_id,Card.STATUS_CORRECT));
 			}
 		});
@@ -107,8 +109,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				//setCard incorrect
 				QueryRunner setStatusQuery = new QueryRunner(myDB);
 				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
-				long card_id = myDeck.cards.get(myDeckCardIndex).id;
-				myDeck.getCardWithId(card_id).status = Card.STATUS_WRONG;
+				long card_id = deckExtras.getIdOfCardAtIndex(myDeckCardIndex);
+				deckExtras.setCardStatus(card_id, Card.STATUS_WRONG);
 				setStatusQuery.execute(DatabaseAdapter.getCardUpdateStatusQuery(card_id,Card.STATUS_WRONG));
 			}
 		});
@@ -138,23 +140,33 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     }
     
     @Override public boolean onPrepareOptionsMenu(Menu menu){
-    	switch (nowShowing){
-			case SHOWING_WRONG:
-				menu.findItem(R.id.card_menu_view_all).setVisible(true);
-				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
-				menu.findItem(R.id.card_menu_view_wrong).setVisible(false);
-				break;
-			case SHOWING_CORRECT:
-				menu.findItem(R.id.card_menu_view_all).setVisible(true);
-				menu.findItem(R.id.card_menu_view_correct).setVisible(false);
-				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
-				break;
-			default:
-				menu.findItem(R.id.card_menu_view_all).setVisible(false);
-				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
-				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
-				break;
-		}
+		menu.findItem(R.id.card_menu_view_all).setVisible(false);
+		menu.findItem(R.id.card_menu_view_correct).setVisible(false);
+		menu.findItem(R.id.card_menu_view_wrong).setVisible(false);
+    	switch(nowShowing){
+    		case SHOWING_WRONG:
+    			if(deckExtras.correctCount>0){
+    				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
+    			}
+    			if(deckExtras.notAnsweredCount>0){
+    				menu.findItem(R.id.card_menu_view_all).setVisible(true);
+    			}
+    		case SHOWING_CORRECT:
+    			if(deckExtras.wrongCount>0){
+    				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
+    			}
+    			if(deckExtras.notAnsweredCount>0){
+    				menu.findItem(R.id.card_menu_view_all).setVisible(true);
+    			}
+    		case SHOWING_ALL:
+    			if(deckExtras.wrongCount>0){
+    				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
+    			}
+    			if(deckExtras.correctCount>0){
+    				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
+    			}
+    	}
+    	Log.d(TAG,deckExtras.correctCount+", "+deckExtras.wrongCount+", "+deckExtras.notAnsweredCount);
 		return true;
     }
 
@@ -173,7 +185,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 finish();
             	break;
             case R.id.card_menu_shuffle:
-            	Collections.shuffle(myDeck.cards);
+            	deckExtras.shuffleDeck();
             	findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
             	findViewById(R.id.skip_button).performClick();
             	break;
@@ -188,7 +200,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     					gotCards(cards);
     				}
             	});
-            	getCorrectCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeck.id, Card.STATUS_CORRECT));
+            	getCorrectCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(deckExtras.getDeckId(), Card.STATUS_CORRECT));
             	break;
             case R.id.card_menu_view_wrong:
             	nowShowing = SHOWING_WRONG;
@@ -198,7 +210,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     					gotCards(cards);
     				}
             	});
-            	getWrongCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeck.id, Card.STATUS_WRONG));
+            	getWrongCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(deckExtras.getDeckId(), Card.STATUS_WRONG));
             	break;
             case R.id.card_menu_view_all:
             	nowShowing = SHOWING_ALL;
@@ -208,8 +220,10 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     					gotCards(cards);
     				}
             	});
-            	getAllCards.execute(DatabaseAdapter.getCardsWithDeckIdQuery(myDeck.id));
+            	getAllCards.execute(DatabaseAdapter.getCardsWithDeckIdQuery(deckExtras.getDeckId()));
             	break;
+            case MotionEvent.ACTION_CANCEL:
+                break;
         }
         return true;
     }
@@ -218,9 +232,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	if(!animating){
 	    	animating = true;
 			showingCardFront = true;
-	    	myDeckCardIndex = ((myDeckCardIndex + myDeck.cards.size()) - 1) % myDeck.cards.size();
+	    	myDeckCardIndex = ((myDeckCardIndex + deckExtras.getWorkingStackSize()) - 1) % deckExtras.getWorkingStackSize();
 	    	
-	    	Card myCard = myDeck.cards.get(myDeckCardIndex);
+	    	Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
 	    	final CharSequence prevQuestion = myCard.question;
 	    	final CharSequence prevAnswer = myCard.answer;
 	    	final int prevStatus = myCard.getResourceStatusImage();
@@ -259,7 +273,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     
     public void gotCards(Cursor cards){
     	Cursor result = cards;
-    	myDeck.cards.clear();
+    	deckExtras.clear();
     	myDeckCardIndex = 0;
 		if(result.getCount()>0){
 	    	result.moveToPosition(-1);
@@ -270,11 +284,13 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				Integer status = result.getInt(3);
 				Integer position = result.getInt(4);
 				Card newCard = new Card(id,question,answer,status,position);
-				myDeck.cards.add(newCard);
+				deckExtras.addCard(newCard);
 			}
 			cardFront.setVisibility(View.VISIBLE);
 			actionsView.setVisibility(View.VISIBLE);
-			Card myCard = myDeck.cards.get(myDeckCardIndex);
+			Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
+			
+			Log.d(TAG,Integer.toString(deckExtras.allCards.size()));
 			
 			((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(myCard.getResourceStatusImage());
 			((TextView) cardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
@@ -344,7 +360,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					cardFront.setVisibility(View.VISIBLE);
 					if(showingCardFront){
 						
-						Card myCard = myDeck.cards.get(myDeckCardIndex);
+						Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
 						
 						CharSequence oldQuestion = myCard.question;
 						int cardStatus = myCard.getResourceStatusImage();
@@ -366,8 +382,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					cardBack.bringToFront();
 					animatedCardFront.bringToFront();
 					
-					myDeckCardIndex = (myDeckCardIndex+1) % myDeck.cards.size();
-					Card myCard = myDeck.cards.get(myDeckCardIndex);
+					myDeckCardIndex = (myDeckCardIndex+1) % deckExtras.getWorkingStackSize();
+					Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
 					
 					CharSequence newQuestion = myCard.question;
 					int newStatus = myCard.getResourceStatusImage();
@@ -380,7 +396,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					anim.setDuration(ANIMATION_DURATION);
 					anim.setAnimationListener(new AnimationListener(){
 						@Override public void onAnimationEnd(Animation animation) {
-							CharSequence newAnswer = myDeck.cards.get(myDeckCardIndex).answer;
+							CharSequence newAnswer = deckExtras.getCardAtIndex(myDeckCardIndex).answer;
 							((TextView) cardBack.findViewById(R.id.answer_text)).setText(newAnswer);
 							cardBack.setVisibility(View.GONE);
 							animatedCardFront.setVisibility(View.GONE);
@@ -396,6 +412,104 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		});
     }//E: gotCards
 	public String getCardPositionString(){
-		return Integer.toString(myDeckCardIndex+1)+"/"+Integer.toString(myDeck.cards.size());
+		return Integer.toString(myDeckCardIndex+1)+"/"+Integer.toString(deckExtras.getWorkingStackSize());
+	}
+	
+	
+	
+/**********************************
+ *            DECK HELPER         *
+ **********************************/
+	private class StudyDesk{
+		
+		public HashMap<Long,Card> cardMap;
+		public ArrayList<Card> allCards;
+		
+		public Deck workingStack;
+		
+		public int correctCount;
+		public int wrongCount;
+		public int notAnsweredCount;
+		
+		public StudyDesk(Deck myDeck) {
+			workingStack = myDeck;
+			cardMap = new HashMap<Long,Card>();
+			allCards = new ArrayList<Card>();
+			correctCount = 0;
+			wrongCount = 0;
+			notAnsweredCount = 0;
+		}
+		
+		public long getDeckId(){
+			return workingStack.id;
+		}
+
+		public boolean setCardStatus(long cardId, int status){
+			Card card = cardMap.get(cardId);
+			switch(card.status){
+				case Card.STATUS_CORRECT:
+					correctCount--;
+					break;
+				case Card.STATUS_WRONG:
+					wrongCount--;
+					break;
+				case Card.STATUS_NONE:
+					notAnsweredCount--;
+					break;
+			}
+			switch(status){
+				case Card.STATUS_CORRECT:
+					correctCount++;
+					break;
+				case Card.STATUS_WRONG:
+					wrongCount++;
+					break;
+				case Card.STATUS_NONE:
+					notAnsweredCount++;
+					break;
+			}
+			card.status = status;
+			return true;
+		}
+		
+		public void clear(){
+			workingStack.cards.clear();
+		}
+		
+		public void addCard(Card card){
+			workingStack.cards.add(card);
+			if(cardMap.get(card.id) == null){
+				cardMap.put(card.id, card);
+				allCards.add(card);
+				if(card.status == Card.STATUS_CORRECT){
+					correctCount++;
+				}else if(card.status == Card.STATUS_WRONG){
+					wrongCount++;
+				}else if(card.status == Card.STATUS_NONE){
+					notAnsweredCount++;
+				}
+			}
+		}
+		
+		public int getWorkingStackSize(){
+			return workingStack.cards.size();
+		}
+		
+		public Card getCardAtIndex(int idx){
+			return workingStack.cards.get(idx);
+		}
+		
+		public long getIdOfCardAtIndex(int index){
+			return workingStack.getCards().get(index).id;
+		}
+		
+		public void shuffleDeck(){
+			Collections.shuffle(workingStack.cards);
+		}
+		
+		public Card getCardWithId(long _id){
+			return cardMap.get(_id);
+		}
+		
 	}
 }
