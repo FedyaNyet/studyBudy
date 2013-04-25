@@ -12,6 +12,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import android.widget.EditText;
 
 public class DatabaseAdapter
 {
@@ -121,6 +122,11 @@ public class DatabaseAdapter
 	
 	public static String getCardsWithDeckIdAndStatusQuery(long DeckId, int status){
 		return getCardsWithDeckIdQuery(DeckId)+" and status = "+status;
+	}
+	
+	public static String getCreateNewCardQuery(String question, String answer,long deckId) {
+		return "INSERT INTO Card (question,answer,deckId) VALUES (\""+question+"\",\""+answer+"\","+deckId+")";
+
 	}
 	
 	public static String getGroupedDeckQuery(){

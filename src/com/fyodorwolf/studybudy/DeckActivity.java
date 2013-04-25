@@ -228,6 +228,15 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 overridePendingTransition(0,0);
                 finish();
             	break;
+            case R.id.card_menu_add_new_card:
+            	Intent createCardIntent = new Intent(DeckActivity.this,CreateCardActivity.class);
+            	createCardIntent.setFlags(
+						Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION);
+            	createCardIntent.putExtra("com.fyodorwolf.studyBudy.deckId", myDeckAdapter.getDeckId());
+				createCardIntent.putExtra("com.fyodorwolf.studyBudy.deckName",  myDeckAdapter.getDeckName());
+				startActivity(createCardIntent);
+            	break;
             case R.id.card_menu_shuffle:
             	myDeckAdapter.shuffleDeck();
             	this.nextCard();

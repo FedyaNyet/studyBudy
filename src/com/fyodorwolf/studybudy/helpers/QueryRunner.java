@@ -3,9 +3,6 @@ package com.fyodorwolf.studybudy.helpers;
 import android.database.Cursor;
 import android.os.AsyncTask;
 
-/********************************************************************************************************************************************
- * 							Private Classes		 																							*
- ********************************************************************************************************************************************/
 	public class QueryRunner extends AsyncTask<String,Integer,Cursor>{
 
 		/**
