@@ -29,6 +29,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.support.v4.view.ViewPager;
 
 public class DeckActivity extends Activity implements ViewPager.PageTransformer {
@@ -42,19 +43,12 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	private RelativeLayout actionsView;
 	private boolean showingCardFront = true;
 	boolean animating = false;
-	public StudyDesk deckExtras;
-	int myDeckCardIndex = 0;
+	public DeckAdapter myDeckAdapter;
     
 	private static final int SWIPE_MIN_DISTANCE = 120;
     private static final int SWIPE_MAX_OFF_PATH = 250;
     private static final int SWIPE_THRESHOLD_VELOCITY = 2000;
 	private static final long ANIMATION_DURATION = 300;
-
-	private static final int SHOWING_ALL = 0;
-	private static final int SHOWING_CORRECT = 1;
-	private static final int SHOWING_WRONG = 2;
-	
-	private int nowShowing = SHOWING_ALL;
 	
     GestureDetector gestureDetector;
     
@@ -83,15 +77,14 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		long deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
 		String deckName =  getIntent().getExtras().getString("com.fyodorwolf.studyBudy.deckName");
 		long[] cardIds =  getIntent().getExtras().getLongArray("com.fyodorwolf.studyBudy.cardIds");
-		deckExtras = new StudyDesk(new Deck(deckId,deckName));
+		myDeckAdapter = new DeckAdapter(new Deck(deckId,deckName));
 		
         setTitle(deckName);
         
         /* DEFINE BUTTON PRESSES */
         final QueryRunnerListener setStatusQueryListener = new QueryRunnerListener(){
 			@Override public void onPostExcecute(Cursor cards) {
-				findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
-				findViewById(R.id.skip_button).performClick();
+				nextCard();
 			}
 		};
         findViewById(R.id.button_correct).setOnClickListener(new OnClickListener(){
@@ -99,8 +92,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				//setCard Correct
 				QueryRunner setStatusQuery = new QueryRunner(myDB);
 				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
-				long card_id = deckExtras.getIdOfCardAtIndex(myDeckCardIndex);
-				deckExtras.setCardStatus(card_id, Card.STATUS_CORRECT);
+				long card_id = myDeckAdapter.getCurrentCard().id;
+				myDeckAdapter.setCardStatus(card_id, Card.STATUS_CORRECT);
 				setStatusQuery.execute(DatabaseAdapter.getCardUpdateStatusQuery(card_id,Card.STATUS_CORRECT));
 			}
 		});
@@ -109,8 +102,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				//setCard incorrect
 				QueryRunner setStatusQuery = new QueryRunner(myDB);
 				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
-				long card_id = deckExtras.getIdOfCardAtIndex(myDeckCardIndex);
-				deckExtras.setCardStatus(card_id, Card.STATUS_WRONG);
+				long card_id = myDeckAdapter.getIdOfCardAtIndex(myDeckAdapter.stackIndex);
+				myDeckAdapter.setCardStatus(card_id, Card.STATUS_WRONG);
 				setStatusQuery.execute(DatabaseAdapter.getCardUpdateStatusQuery(card_id,Card.STATUS_WRONG));
 			}
 		});
@@ -128,6 +121,40 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     		queryString = DatabaseAdapter.getCardsWithIdsQuery(cardIds);
     	}
     	query.execute(queryString);
+
+		/* DEFINE GESTURES */
+        gestureDetector = new GestureDetector(this, new SimpleOnGestureListener(){
+			@Override public boolean onDoubleTap(MotionEvent e) { return super.onDoubleTap(e);}
+			@Override public void onLongPress(MotionEvent e) { super.onLongPress(e);}
+			@Override public boolean onSingleTapConfirmed(MotionEvent e) { return super.onSingleTapConfirmed(e);}
+			@Override public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+	            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
+	           	 	if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+	           	 		nextCard(); // down swipe
+		            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+		            	previousCard();// up swipe
+		            }
+	            }else{
+	    			flipCard(); //left or right swipe
+	            }
+				return super.onFling(e1, e2, velocityX, velocityY);
+			}
+        });
+        
+        /* FLIP ACTION*/
+		findViewById(R.id.flip_button).setOnClickListener(new OnClickListener() {
+			@Override public void onClick(View view) {
+				flipCard();
+			}
+		});
+		
+		/* SKIP ACTION */
+		findViewById(R.id.skip_button).setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				nextCard();
+			}
+		});
     	
         super.onCreate(savedInstanceState);
 	}// E:onCreate
@@ -140,33 +167,58 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     }
     
     @Override public boolean onPrepareOptionsMenu(Menu menu){
-		menu.findItem(R.id.card_menu_view_all).setVisible(false);
-		menu.findItem(R.id.card_menu_view_correct).setVisible(false);
+		menu.findItem(R.id.card_menu_view_not_answered).setVisible(false);
 		menu.findItem(R.id.card_menu_view_wrong).setVisible(false);
-    	switch(nowShowing){
-    		case SHOWING_WRONG:
-    			if(deckExtras.correctCount>0){
-    				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
-    			}
-    			if(deckExtras.notAnsweredCount>0){
-    				menu.findItem(R.id.card_menu_view_all).setVisible(true);
-    			}
-    		case SHOWING_CORRECT:
-    			if(deckExtras.wrongCount>0){
+		menu.findItem(R.id.card_menu_view_correct).setVisible(false);
+		menu.findItem(R.id.card_menu_view_all).setVisible(false);
+    	switch(myDeckAdapter.currentStack){
+	    	case DeckAdapter.STACK_NOT_ANSWERED:
+				if(myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]>0){
+					menu.findItem(R.id.card_menu_view_correct).setVisible(true);
+				}
+				if(myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG] > 0){
+					menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
+				}
+				if(myDeckAdapter.getTotalCardCount() > myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED]){
+					menu.findItem(R.id.card_menu_view_all).setVisible(true);
+				}
+				break;
+			case DeckAdapter.STACK_WRONG:
+				if(myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]>0){
+					menu.findItem(R.id.card_menu_view_correct).setVisible(true);
+				}
+				if(myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED] > 0){
+					menu.findItem(R.id.card_menu_view_not_answered).setVisible(true);
+				}
+				if(myDeckAdapter.getTotalCardCount() > myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG]){
+					menu.findItem(R.id.card_menu_view_all).setVisible(true);
+				}
+				break;
+    		case DeckAdapter.STACK_CORRECT:
+    			if(myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG]>0){
     				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
     			}
-    			if(deckExtras.notAnsweredCount>0){
+    			if(myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED] > 0){
+    				menu.findItem(R.id.card_menu_view_not_answered).setVisible(true);
+    			}
+    			if(myDeckAdapter.getTotalCardCount() > myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]){
     				menu.findItem(R.id.card_menu_view_all).setVisible(true);
     			}
-    		case SHOWING_ALL:
-    			if(deckExtras.wrongCount>0){
+				break;
+    		case DeckAdapter.STACK_ALL:
+    			if(myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG]>0){
     				menu.findItem(R.id.card_menu_view_wrong).setVisible(true);
     			}
-    			if(deckExtras.correctCount>0){
+    			if(myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]>0){
     				menu.findItem(R.id.card_menu_view_correct).setVisible(true);
     			}
+    			if(myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED]>0){
+    				menu.findItem(R.id.card_menu_view_not_answered).setVisible(true);
+    			}
+				break;
     	}
-    	Log.d(TAG,deckExtras.correctCount+", "+deckExtras.wrongCount+", "+deckExtras.notAnsweredCount);
+		Log.d(TAG,"nowShowing:"+myDeckAdapter.currentStack);
+    	Log.d(TAG,"C/W/N: "+myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]+", "+myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG]+", "+myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED]);
 		return true;
     }
 
@@ -174,7 +226,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         super.onOptionsItemSelected(item);
         switch (item.getItemId()) {
             case android.R.id.home:
-                // Pressed home (Up) 
                 Intent parentActivityIntent = new Intent(this, MainActivity.class);
                 parentActivityIntent.addFlags(
                         Intent.FLAG_ACTIVITY_NO_ANIMATION|
@@ -185,42 +236,44 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 finish();
             	break;
             case R.id.card_menu_shuffle:
-            	deckExtras.shuffleDeck();
-            	findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
-            	findViewById(R.id.skip_button).performClick();
+            	myDeckAdapter.shuffleDeck();
+            	this.nextCard();
             	break;
             case R.id.card_menu_show_previous:
             	this.previousCard();
             	break;
+            case R.id.card_menu_view_not_answered:
+            	myDeckAdapter.nowShowingNotAnswered();
+            	QueryRunner getNotAnsweredCards = new QueryRunner(myDB);
+            	getNotAnsweredCards.setQueryRunnerListener(new QueryRunnerListener(){
+    				@Override public void onPostExcecute(Cursor cards) {
+    					gotCards(cards);
+    				}
+            	});
+            	getNotAnsweredCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_NONE));
+            	break;
             case R.id.card_menu_view_correct:
-            	nowShowing = SHOWING_CORRECT;
+            	myDeckAdapter.nowShowingCorrect();
             	QueryRunner getCorrectCards = new QueryRunner(myDB);
             	getCorrectCards.setQueryRunnerListener(new QueryRunnerListener(){
     				@Override public void onPostExcecute(Cursor cards) {
     					gotCards(cards);
     				}
             	});
-            	getCorrectCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(deckExtras.getDeckId(), Card.STATUS_CORRECT));
+            	getCorrectCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_CORRECT));
             	break;
             case R.id.card_menu_view_wrong:
-            	nowShowing = SHOWING_WRONG;
+            	myDeckAdapter.nowShowingWrong();
             	QueryRunner getWrongCards = new QueryRunner(myDB);
             	getWrongCards.setQueryRunnerListener(new QueryRunnerListener(){
     				@Override public void onPostExcecute(Cursor cards) {
     					gotCards(cards);
     				}
             	});
-            	getWrongCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(deckExtras.getDeckId(), Card.STATUS_WRONG));
+            	getWrongCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_WRONG));
             	break;
             case R.id.card_menu_view_all:
-            	nowShowing = SHOWING_ALL;
-            	QueryRunner getAllCards = new QueryRunner(myDB);
-            	getAllCards.setQueryRunnerListener(new QueryRunnerListener(){
-    				@Override public void onPostExcecute(Cursor cards) {
-    					gotCards(cards);
-    				}
-            	});
-            	getAllCards.execute(DatabaseAdapter.getCardsWithDeckIdQuery(deckExtras.getDeckId()));
+            	changeToAllStack();
             	break;
             case MotionEvent.ACTION_CANCEL:
                 break;
@@ -228,13 +281,89 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         return true;
     }
     
+    private void changeToAllStack(){
+    	myDeckAdapter.nowShowingAll();
+    	QueryRunner getAllCards = new QueryRunner(myDB);
+    	getAllCards.setQueryRunnerListener(new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cards) {
+				gotCards(cards);
+			}
+    	});
+    	getAllCards.execute(DatabaseAdapter.getCardsWithDeckIdQuery(myDeckAdapter.getDeckId()));
+    }
+    
+    private void nextCard(){
+    	if(myDeckAdapter.getDeckCount()==0){
+    		changeToAllStack();
+    		Toast.makeText(getApplicationContext(), "Current stack is empty. Now viewing all Cards", Toast.LENGTH_LONG).show();
+    	}else if(!animating){
+			animating = true;
+        	findViewById(R.id.skip_button).setSoundEffectsEnabled(true);
+			View animatedCard;
+			cardFront.setVisibility(View.VISIBLE);
+			if(showingCardFront){
+				
+				Card myCard = myDeckAdapter.getCurrentCard();
+				
+				CharSequence oldQuestion = myCard.question;
+				int cardStatus = myCard.getResourceStatusImage();
+
+				((TextView)animatedCardFront.findViewById(R.id.question_text)).setText(oldQuestion);
+				((ImageView)animatedCardFront.findViewById(R.id.card_status)).setImageResource(cardStatus);
+				((TextView)animatedCardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
+				
+				cardBack.setVisibility(View.GONE);
+				animatedCardFront.setVisibility(View.VISIBLE);
+				animatedCard = animatedCardFront;
+			}else{
+				cardBack.setVisibility(View.VISIBLE);
+				animatedCardFront.setVisibility(View.GONE);
+				animatedCard = cardBack;
+			}
+			/*make sure the order is correct to produce the stack effect...*/
+			cardFront.bringToFront();
+			cardBack.bringToFront();
+			animatedCardFront.bringToFront();
+			
+			myDeckAdapter.incrementIndex();
+			Card myCard = myDeckAdapter.getCurrentCard();
+			Log.d(TAG,"currentCard: "+myCard.toString());
+			
+			CharSequence newQuestion = myCard.question;
+			int newStatus = myCard.getResourceStatusImage();
+			
+			((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
+			((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(newStatus);
+			((TextView) cardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
+
+			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
+			anim.setDuration(ANIMATION_DURATION);
+			anim.setAnimationListener(new AnimationListener(){
+				@Override public void onAnimationEnd(Animation animation) {
+					CharSequence newAnswer = myDeckAdapter.getCurrentCard().answer;
+					((TextView) cardBack.findViewById(R.id.answer_text)).setText(newAnswer);
+					cardBack.setVisibility(View.GONE);
+					animatedCardFront.setVisibility(View.GONE);
+					showingCardFront = true;
+					animating=false;
+				}
+				@Override public void onAnimationRepeat(Animation animation) {}
+				@Override public void onAnimationStart(Animation animation) {}
+			});
+			animatedCard.startAnimation(anim);
+		}
+    }
+    
     private void previousCard(){
-    	if(!animating){
+    	if(myDeckAdapter.getDeckCount()==0){
+    		changeToAllStack();
+    		Toast.makeText(getApplicationContext(), "Current stack is empty. Now viewing all Cards", Toast.LENGTH_LONG).show();
+    	}else if(!animating){
 	    	animating = true;
 			showingCardFront = true;
-	    	myDeckCardIndex = ((myDeckCardIndex + deckExtras.getWorkingStackSize()) - 1) % deckExtras.getWorkingStackSize();
+			myDeckAdapter.decrementIndex();
 	    	
-	    	Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
+	    	Card myCard = myDeckAdapter.getCardAtIndex(myDeckAdapter.stackIndex);
 	    	final CharSequence prevQuestion = myCard.question;
 	    	final CharSequence prevAnswer = myCard.answer;
 	    	final int prevStatus = myCard.getResourceStatusImage();
@@ -249,7 +378,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 
 			((TextView) animatedCardFront.findViewById(R.id.question_text)).setText(prevQuestion);
 			((ImageView) animatedCardFront.findViewById(R.id.card_status)).setImageResource(prevStatus);
-			((TextView) animatedCardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
+			((TextView) animatedCardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
 	
 			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_in_down);
 			anim.setDuration(ANIMATION_DURATION);
@@ -258,7 +387,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					((TextView) cardBack.findViewById(R.id.answer_text)).setText(prevAnswer);
 					((TextView) cardFront.findViewById(R.id.question_text)).setText(prevQuestion);
 					((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(prevStatus);
-					((TextView) cardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
+					((TextView) cardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
 					cardFront.setVisibility(View.VISIBLE);
 					cardBack.setVisibility(View.GONE);
 					animatedCardFront.setVisibility(View.GONE);
@@ -270,11 +399,34 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			animatedCardFront.startAnimation(anim);
     	}
     }
+
+    private void flipCard(){
+		if(!animating && myDeckAdapter.getDeckCount()>0){
+			animating = true;
+			ViewFlipper rotation;
+			if (showingCardFront){
+				rotation = new ViewFlipper(cardFront, cardBack);
+				rotation.setDirection(ViewFlipper.ROTATE_LEFT);
+			} else {
+				rotation = new ViewFlipper(cardBack, cardFront);
+				rotation.setDirection(ViewFlipper.ROTATE_RIGHT);
+			}
+			rotation.setDuration(ANIMATION_DURATION);
+			rotation.addViewSwapperListener(new ViewSwapperListener(){
+				@Override public void onViewSwapperStart() {}
+				@Override public void onViewSwapperHalfComplete() {}
+				@Override public void onViewSwapperComplete() {
+			    	animating = false;
+				}
+			});
+			rotation.run();
+			showingCardFront = !showingCardFront;
+		}
+    }
     
     public void gotCards(Cursor cards){
     	Cursor result = cards;
-    	deckExtras.clear();
-    	myDeckCardIndex = 0;
+    	myDeckAdapter.clear();
 		if(result.getCount()>0){
 	    	result.moveToPosition(-1);
 			while(result.moveToNext()){
@@ -284,196 +436,105 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				Integer status = result.getInt(3);
 				Integer position = result.getInt(4);
 				Card newCard = new Card(id,question,answer,status,position);
-				deckExtras.addCard(newCard);
+				myDeckAdapter.addCard(newCard);
 			}
 			cardFront.setVisibility(View.VISIBLE);
 			actionsView.setVisibility(View.VISIBLE);
-			Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
+			Card myCard = myDeckAdapter.getCurrentCard();
 			
-			Log.d(TAG,Integer.toString(deckExtras.allCards.size()));
+			Log.d(TAG,"DeckSize:"+Integer.toString(myDeckAdapter.allCards.size()));
 			
 			((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(myCard.getResourceStatusImage());
-			((TextView) cardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
+			((TextView) cardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
 			((TextView) cardFront.findViewById(R.id.question_text)).setText(myCard.question);
 			((TextView) cardBack.findViewById(R.id.answer_text)).setText(myCard.answer);
-			
-			/* DEFINE GESTURES */
-	        gestureDetector = new GestureDetector(this, new SimpleOnGestureListener(){
-				@Override public boolean onDoubleTap(MotionEvent e) { return super.onDoubleTap(e);}
-				@Override public void onLongPress(MotionEvent e) { super.onLongPress(e);}
-				@Override public boolean onSingleTapConfirmed(MotionEvent e) { return super.onSingleTapConfirmed(e);}
-				@Override public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-		            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
-		           	 	if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-				            // down swipe
-		           	 		findViewById(R.id.skip_button).setSoundEffectsEnabled(false);
-			            	findViewById(R.id.skip_button).performClick();
-			            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-				    	    // up swipe
-			            	previousCard();
-			            }
-		            }else{
-		           	 	//left or right swipe
-		    			findViewById(R.id.flip_button).setSoundEffectsEnabled(false);
-						findViewById(R.id.flip_button).performClick();
-		            }
-					return super.onFling(e1, e2, velocityX, velocityY);
-				}
-	        });
-	        
-	        /* FLIP ACTION*/
-			findViewById(R.id.flip_button).setOnClickListener(new OnClickListener() {
-				@Override public void onClick(View view) {
-					findViewById(R.id.flip_button).setSoundEffectsEnabled(true);
-					if(!animating){
-						animating = true;
-						ViewFlipper rotation;
-						if (showingCardFront){
-							rotation = new ViewFlipper(cardFront, cardBack);
-							rotation.setDirection(ViewFlipper.ROTATE_LEFT);
-						} else {
-							rotation = new ViewFlipper(cardBack, cardFront);
-							rotation.setDirection(ViewFlipper.ROTATE_RIGHT);
-						}
-						rotation.setDuration(ANIMATION_DURATION);
-						rotation.addViewSwapperListener(new ViewSwapperListener(){
-							@Override public void onViewSwapperStart() {}
-							@Override public void onViewSwapperHalfComplete() {}
-							@Override public void onViewSwapperComplete() {
-						    	animating = false;
-							}
-						});
-						rotation.run();
-						showingCardFront = !showingCardFront;
-					}
-				}
-			});
-		}//E: Cursor.size > 0
-		/* SKIP ACTION */
-		findViewById(R.id.skip_button).setOnClickListener(new OnClickListener(){
-			@Override
-			public void onClick(View v) {
-				if(!animating){
-	            	findViewById(R.id.skip_button).setSoundEffectsEnabled(true);
-					animating = true;
-					View animatedCard;
-					cardFront.setVisibility(View.VISIBLE);
-					if(showingCardFront){
-						
-						Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
-						
-						CharSequence oldQuestion = myCard.question;
-						int cardStatus = myCard.getResourceStatusImage();
 
-						((TextView)animatedCardFront.findViewById(R.id.question_text)).setText(oldQuestion);
-						((ImageView)animatedCardFront.findViewById(R.id.card_status)).setImageResource(cardStatus);
-						((TextView)animatedCardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
-						
-						cardBack.setVisibility(View.GONE);
-						animatedCardFront.setVisibility(View.VISIBLE);
-						animatedCard = animatedCardFront;
-					}else{
-						cardBack.setVisibility(View.VISIBLE);
-						animatedCardFront.setVisibility(View.GONE);
-						animatedCard = cardBack;
-					}
-					/*make sure the order is correct to produce the stack effect...*/
-					cardFront.bringToFront();
-					cardBack.bringToFront();
-					animatedCardFront.bringToFront();
-					
-					myDeckCardIndex = (myDeckCardIndex+1) % deckExtras.getWorkingStackSize();
-					Card myCard = deckExtras.getCardAtIndex(myDeckCardIndex);
-					
-					CharSequence newQuestion = myCard.question;
-					int newStatus = myCard.getResourceStatusImage();
-					
-					((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
-					((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(newStatus);
-					((TextView) cardFront.findViewById(R.id.card_id)).setText(getCardPositionString());
-
-					Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
-					anim.setDuration(ANIMATION_DURATION);
-					anim.setAnimationListener(new AnimationListener(){
-						@Override public void onAnimationEnd(Animation animation) {
-							CharSequence newAnswer = deckExtras.getCardAtIndex(myDeckCardIndex).answer;
-							((TextView) cardBack.findViewById(R.id.answer_text)).setText(newAnswer);
-							cardBack.setVisibility(View.GONE);
-							animatedCardFront.setVisibility(View.GONE);
-							showingCardFront = true;
-							animating=false;
-						}
-						@Override public void onAnimationRepeat(Animation animation) {}
-						@Override public void onAnimationStart(Animation animation) {}
-					});
-					animatedCard.startAnimation(anim);
-				}
+			if (!showingCardFront){
+				flipCard();
 			}
-		});
+		}//E: Cursor.size > 0
+		
     }//E: gotCards
-	public String getCardPositionString(){
-		return Integer.toString(myDeckCardIndex+1)+"/"+Integer.toString(deckExtras.getWorkingStackSize());
-	}
 	
 	
 	
-/**********************************
- *            DECK HELPER         *
- **********************************/
-	private class StudyDesk{
+/************************************************************************************************************************
+ *                     			DECK ADAPTER																			*
+ ************************************************************************************************************************/
+	private class DeckAdapter{
+		
+		private static final int STACK_NOT_ANSWERED = Card.STATUS_NONE;
+		private static final int STACK_CORRECT = Card.STATUS_CORRECT;
+		private static final int STACK_WRONG = Card.STATUS_WRONG;
+		private static final int STACK_ALL = 3;
+		
+		private int currentStack;
+		
+		int[] stackCounts = {0,0,0,0};
+		public Deck workingStack;
+		int stackIndex;
 		
 		public HashMap<Long,Card> cardMap;
 		public ArrayList<Card> allCards;
 		
-		public Deck workingStack;
-		
-		public int correctCount;
-		public int wrongCount;
-		public int notAnsweredCount;
-		
-		public StudyDesk(Deck myDeck) {
+		public DeckAdapter(Deck myDeck) {
+			currentStack = STACK_ALL;
 			workingStack = myDeck;
+			stackIndex = 0;
 			cardMap = new HashMap<Long,Card>();
 			allCards = new ArrayList<Card>();
-			correctCount = 0;
-			wrongCount = 0;
-			notAnsweredCount = 0;
 		}
 		
+		public int getDeckCount() {
+			return workingStack.cards.size();
+		}
+
+		public int getTotalCardCount(){
+			return allCards.size();
+		}
+		
+		public void nowShowingAll() {
+        	currentStack = STACK_ALL;
+		}
+
+		public void nowShowingNotAnswered() {
+        	currentStack = STACK_NOT_ANSWERED;
+		}
+
+		public void nowShowingWrong() {
+        	currentStack = STACK_WRONG;
+		}
+
+		public void nowShowingCorrect() {
+        	currentStack = STACK_CORRECT;
+		}
+
+		public int decrementIndex() {
+			return stackIndex = ((stackIndex + getWorkingStackSize()) - 1) % getWorkingStackSize();
+		}
+		
+		public int incrementIndex(){
+			return stackIndex =  (stackIndex+1) % getWorkingStackSize();
+		}
+
 		public long getDeckId(){
 			return workingStack.id;
 		}
 
 		public boolean setCardStatus(long cardId, int status){
-			Card card = cardMap.get(cardId);
-			switch(card.status){
-				case Card.STATUS_CORRECT:
-					correctCount--;
-					break;
-				case Card.STATUS_WRONG:
-					wrongCount--;
-					break;
-				case Card.STATUS_NONE:
-					notAnsweredCount--;
-					break;
-			}
-			switch(status){
-				case Card.STATUS_CORRECT:
-					correctCount++;
-					break;
-				case Card.STATUS_WRONG:
-					wrongCount++;
-					break;
-				case Card.STATUS_NONE:
-					notAnsweredCount++;
-					break;
-			}
+			Card card = getCardWithId(cardId);
+			stackCounts[card.status]--;
+			stackCounts[status]++;
 			card.status = status;
+			if(currentStack != card.status && currentStack != STACK_ALL){
+				workingStack.cards.remove(stackIndex);
+			}
 			return true;
 		}
 		
 		public void clear(){
 			workingStack.cards.clear();
+			stackIndex = 0;
 		}
 		
 		public void addCard(Card card){
@@ -481,13 +542,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			if(cardMap.get(card.id) == null){
 				cardMap.put(card.id, card);
 				allCards.add(card);
-				if(card.status == Card.STATUS_CORRECT){
-					correctCount++;
-				}else if(card.status == Card.STATUS_WRONG){
-					wrongCount++;
-				}else if(card.status == Card.STATUS_NONE){
-					notAnsweredCount++;
-				}
+				stackCounts[card.status]++;
+				stackCounts[STACK_ALL]++;
 			}
 		}
 		
@@ -495,8 +551,12 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			return workingStack.cards.size();
 		}
 		
-		public Card getCardAtIndex(int idx){
-			return workingStack.cards.get(idx);
+		public Card getCurrentCard(){
+			return workingStack.cards.get(stackIndex);
+		}
+		
+		public Card getCardAtIndex(int index){
+			return workingStack.cards.get(index);
 		}
 		
 		public long getIdOfCardAtIndex(int index){
@@ -509,6 +569,10 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		
 		public Card getCardWithId(long _id){
 			return cardMap.get(_id);
+		}
+
+		public String getCardPositionString(){
+			return Integer.toString(stackIndex+1)+"/"+Integer.toString(getWorkingStackSize());
 		}
 		
 	}
