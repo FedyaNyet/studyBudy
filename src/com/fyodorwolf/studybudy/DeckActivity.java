@@ -1,10 +1,7 @@
 package com.fyodorwolf.studybudy;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
+import com.fyodorwolf.studybudy.helpers.DeckAdapter;
 import com.fyodorwolf.studybudy.helpers.QueryRunner;
 import com.fyodorwolf.studybudy.helpers.ViewFlipper;
 import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
@@ -35,15 +32,17 @@ import android.support.v4.view.ViewPager;
 public class DeckActivity extends Activity implements ViewPager.PageTransformer {
 
 	private static final String TAG = "ListActivity";
-	DatabaseAdapter myDB;
+	
+	private DatabaseAdapter myDB;
+	private DeckAdapter myDeckAdapter;
 	
 	private RelativeLayout cardFront;
 	private RelativeLayout cardBack;
 	private RelativeLayout animatedCardFront;
 	private RelativeLayout actionsView;
+	
 	private boolean showingCardFront = true;
-	boolean animating = false;
-	public DeckAdapter myDeckAdapter;
+	private boolean animating = false;
     
 	private static final int SWIPE_MIN_DISTANCE = 120;
     private static final int SWIPE_MAX_OFF_PATH = 250;
@@ -51,14 +50,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	private static final long ANIMATION_DURATION = 300;
 	
     GestureDetector gestureDetector;
-    
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		return gestureDetector.onTouchEvent(event);
-	}
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState){
+	@Override protected void onCreate(Bundle savedInstanceState){
 
 		/* SET VIEWS AND COMPONENT VISIBILITY */
 		setContentView(R.layout.card_view);
@@ -280,7 +273,11 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         }
         return true;
     }
-    
+
+	@Override public boolean onTouchEvent(MotionEvent event) {
+		return gestureDetector.onTouchEvent(event);
+	}
+	
     private void changeToAllStack(){
     	myDeckAdapter.nowShowingAll();
     	QueryRunner getAllCards = new QueryRunner(myDB);
@@ -298,7 +295,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     		Toast.makeText(getApplicationContext(), "Current stack is empty. Now viewing all Cards", Toast.LENGTH_LONG).show();
     	}else if(!animating){
 			animating = true;
-        	findViewById(R.id.skip_button).setSoundEffectsEnabled(true);
 			View animatedCard;
 			cardFront.setVisibility(View.VISIBLE);
 			if(showingCardFront){
@@ -442,7 +438,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			actionsView.setVisibility(View.VISIBLE);
 			Card myCard = myDeckAdapter.getCurrentCard();
 			
-			Log.d(TAG,"DeckSize:"+Integer.toString(myDeckAdapter.allCards.size()));
+			Log.d(TAG,"DeckSize:"+Integer.toString(myDeckAdapter.getTotalCardCount()));
 			
 			((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(myCard.getResourceStatusImage());
 			((TextView) cardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
@@ -456,124 +452,4 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		
     }//E: gotCards
 	
-	
-	
-/************************************************************************************************************************
- *                     			DECK ADAPTER																			*
- ************************************************************************************************************************/
-	private class DeckAdapter{
-		
-		private static final int STACK_NOT_ANSWERED = Card.STATUS_NONE;
-		private static final int STACK_CORRECT = Card.STATUS_CORRECT;
-		private static final int STACK_WRONG = Card.STATUS_WRONG;
-		private static final int STACK_ALL = 3;
-		
-		private int currentStack;
-		
-		int[] stackCounts = {0,0,0,0};
-		public Deck workingStack;
-		int stackIndex;
-		
-		public HashMap<Long,Card> cardMap;
-		public ArrayList<Card> allCards;
-		
-		public DeckAdapter(Deck myDeck) {
-			currentStack = STACK_ALL;
-			workingStack = myDeck;
-			stackIndex = 0;
-			cardMap = new HashMap<Long,Card>();
-			allCards = new ArrayList<Card>();
-		}
-		
-		public int getDeckCount() {
-			return workingStack.cards.size();
-		}
-
-		public int getTotalCardCount(){
-			return allCards.size();
-		}
-		
-		public void nowShowingAll() {
-        	currentStack = STACK_ALL;
-		}
-
-		public void nowShowingNotAnswered() {
-        	currentStack = STACK_NOT_ANSWERED;
-		}
-
-		public void nowShowingWrong() {
-        	currentStack = STACK_WRONG;
-		}
-
-		public void nowShowingCorrect() {
-        	currentStack = STACK_CORRECT;
-		}
-
-		public int decrementIndex() {
-			return stackIndex = ((stackIndex + getWorkingStackSize()) - 1) % getWorkingStackSize();
-		}
-		
-		public int incrementIndex(){
-			return stackIndex =  (stackIndex+1) % getWorkingStackSize();
-		}
-
-		public long getDeckId(){
-			return workingStack.id;
-		}
-
-		public boolean setCardStatus(long cardId, int status){
-			Card card = getCardWithId(cardId);
-			stackCounts[card.status]--;
-			stackCounts[status]++;
-			card.status = status;
-			if(currentStack != card.status && currentStack != STACK_ALL){
-				workingStack.cards.remove(stackIndex);
-			}
-			return true;
-		}
-		
-		public void clear(){
-			workingStack.cards.clear();
-			stackIndex = 0;
-		}
-		
-		public void addCard(Card card){
-			workingStack.cards.add(card);
-			if(cardMap.get(card.id) == null){
-				cardMap.put(card.id, card);
-				allCards.add(card);
-				stackCounts[card.status]++;
-				stackCounts[STACK_ALL]++;
-			}
-		}
-		
-		public int getWorkingStackSize(){
-			return workingStack.cards.size();
-		}
-		
-		public Card getCurrentCard(){
-			return workingStack.cards.get(stackIndex);
-		}
-		
-		public Card getCardAtIndex(int index){
-			return workingStack.cards.get(index);
-		}
-		
-		public long getIdOfCardAtIndex(int index){
-			return workingStack.getCards().get(index).id;
-		}
-		
-		public void shuffleDeck(){
-			Collections.shuffle(workingStack.cards);
-		}
-		
-		public Card getCardWithId(long _id){
-			return cardMap.get(_id);
-		}
-
-		public String getCardPositionString(){
-			return Integer.toString(stackIndex+1)+"/"+Integer.toString(getWorkingStackSize());
-		}
-		
-	}
 }
