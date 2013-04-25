@@ -9,10 +9,7 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.Transformation;
 import android.view.animation.DecelerateInterpolator;
 
-public final class ViewFlipper implements Runnable{
-	
-	//used with Log.d(TAG,"some string");
-	private static final String TAG = "ViewSwapper"; 
+public final class ViewFlipper implements Runnable{ 
 
 	public static final int ROTATE_LEFT = 1;
 	public static final int ROTATE_RIGHT = 2;

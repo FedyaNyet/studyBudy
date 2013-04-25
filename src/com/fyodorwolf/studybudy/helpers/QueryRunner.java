@@ -22,8 +22,6 @@ import android.os.AsyncTask;
 			@Override public void onPostExcecute(Cursor cards){}
 		};
 	}
-
-	private static final String TAG = "DeckGetter";
 	
 	@Override
 	protected Cursor doInBackground(String... params) {
