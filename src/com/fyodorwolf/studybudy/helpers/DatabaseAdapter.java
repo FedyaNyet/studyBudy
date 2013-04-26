@@ -16,7 +16,7 @@ import android.widget.EditText;
 
 public class DatabaseAdapter
 {
-	public final static boolean WIPE_DATABASE = false;
+	public final static boolean WIPE_DATABASE = true;
 	
 	protected static final String TAG = "DataAdapter";
     
@@ -126,7 +126,10 @@ public class DatabaseAdapter
 	
 	public static String getCreateNewCardQuery(String question, String answer,long deckId) {
 		return "INSERT INTO Card (question,answer,deckId) VALUES (\""+question+"\",\""+answer+"\","+deckId+")";
-
+	}
+	
+	public static String getRemoveCardQuery(long cardId){
+		return "DELETE FROM Card WHERE _id = "+cardId;
 	}
 	
 	public static String getGroupedDeckQuery(){

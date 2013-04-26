@@ -63,7 +63,6 @@ public class CreateCardActivity extends Activity {
         parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
         parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckName",  deckName);
         parentActivityIntent.addFlags(
-                Intent.FLAG_ACTIVITY_NO_ANIMATION|
                 Intent.FLAG_ACTIVITY_CLEAR_TOP |
                 Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(parentActivityIntent);
