@@ -405,6 +405,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		if(!animating && myDeckAdapter.getDeckCount()>0){
 			animating = true;
 			ViewFlipper rotation;
+			animatedCardFront.setVisibility(View.GONE);
 			if (showingCardFront){
 				rotation = new ViewFlipper(cardFront, cardBack);
 				rotation.setDirection(ViewFlipper.ROTATE_LEFT);
