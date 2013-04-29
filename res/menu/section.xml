@@ -10,5 +10,15 @@
         android:orderInCategory="101"
         android:showAsAction="never"
         android:title="@string/main_menu_edit_list"/>
+    <item
+        android:id="@+id/main_menu_delete"
+        android:orderInCategory="101"
+        android:showAsAction="never"
+        android:title="@string/main_menu_delete"/>
+    <item
+        android:id="@+id/main_menu_cancel_edit"
+        android:orderInCategory="101"
+        android:showAsAction="never"
+        android:title="@string/main_menu_cancel_edit"/>
 
 </menu>

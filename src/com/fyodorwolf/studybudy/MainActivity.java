@@ -19,16 +19,16 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.EditText;
 import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.ListView;
 import android.widget.TextView;
 
 public class MainActivity extends ExpandableListActivity{
@@ -37,6 +37,7 @@ public class MainActivity extends ExpandableListActivity{
 	ExpandableListView listView;
 	private DatabaseAdapter myDB;
 	private static final String TAG = "MainActivity";
+	private boolean editing = false;
 	
 	ArrayList<Section> _myExpListData = new ArrayList<Section>();
 	HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
@@ -46,6 +47,7 @@ public class MainActivity extends ExpandableListActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // define main views.
+    	Log.d(TAG,"started");
 		setContentView(R.layout.list_view);
 	    getActionBar().setDisplayHomeAsUpEnabled(false);
 	    
@@ -86,12 +88,7 @@ public class MainActivity extends ExpandableListActivity{
     	        return false;
     	    }
     	});
-    	listView.setOnItemClickListener(new OnItemClickListener(){
-			@Override
-			public void onItemClick(AdapterView<?> adapterView, View view, int position,long id) {
-				Log.d(TAG,"selected Item"); 
-			}
-        });
+    	
 		listView.setOnChildClickListener(new OnChildClickListener(){
 
 			@Override
@@ -132,15 +129,65 @@ public class MainActivity extends ExpandableListActivity{
 		
 	}
 
-	@Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+	@Override public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.section, menu);
         return true;
     }
-    
-    @Override
-    public void onStart(){
+
+    @Override public boolean onPrepareOptionsMenu(Menu menu){
+    	if(editing){
+    		menu.findItem(R.id.main_menu_edit_list).setVisible(false);
+    		menu.findItem(R.id.main_menu_delete).setVisible(true);
+    		menu.findItem(R.id.main_menu_cancel_edit).setVisible(true);
+    	}else{
+    		menu.findItem(R.id.main_menu_edit_list).setVisible(true);
+    		menu.findItem(R.id.main_menu_delete).setVisible(false);
+    		menu.findItem(R.id.main_menu_cancel_edit).setVisible(false);
+    	}
+    	return true;
+    }
+
+    @Override public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.main_menu_new_deck:
+            	Intent createDeckIntent = new Intent(MainActivity.this,CreateDeckActivity.class);
+            	createDeckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION);
+            	String[] sectionNames = new String[_myExpListData.size()];
+            	long[] sectionIds = new long[_myExpListData.size()];
+            	for(int idx = 0; idx < _myExpListData.size(); idx++){
+            		sectionNames[idx] = _myExpListData.get(idx).name;
+            		sectionIds[idx] = _myExpListData.get(idx).id;
+            	}
+            	createDeckIntent.putExtra("com.fyodorwolf.studyBudy.sectionNames", sectionNames);
+            	createDeckIntent.putExtra("com.fyodorwolf.studyBudy.sectionIds", sectionIds);
+            	startActivity(createDeckIntent);
+            	break;
+            case R.id.main_menu_edit_list:
+            	editing = true;
+                this.listView.setItemsCanFocus(false);
+                this.listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+                listView.invalidate();
+                break;
+            case R.id.main_menu_delete:
+            	editing = false;
+                this.listView.setItemsCanFocus(true);
+                this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+                ExpandableListAdapter myAdapter = (ExpandableListAdapter)listView.getAdapter();
+                myAdapter.getChildView(0, 0, false, convertView, listView);
+                listView.invalidate();
+                break;
+            case R.id.main_menu_cancel_edit:
+            	editing = false;
+                this.listView.setItemsCanFocus(true);
+                this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+                listView.invalidate();
+                break;
+        }
+    	return true;
+    }
+    @Override public void onStart(){
     	listView.requestFocus();
         super.onStart();
     }

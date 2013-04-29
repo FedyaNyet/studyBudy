@@ -36,7 +36,7 @@ import android.os.AsyncTask;
 	}
 	
 	public interface QueryRunnerListener{
-		public void onPostExcecute(Cursor cards);
+		public void onPostExcecute(Cursor cursor);
 	}
 	
 }//E:DeckGetter

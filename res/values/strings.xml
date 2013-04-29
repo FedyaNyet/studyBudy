@@ -28,8 +28,13 @@
     <string name="card_id">0</string>
     <string name="card_status">Current card status</string>
     <string name="question_label">Question:</string>
-    <string name="create_card">Create</string>
+    <string name="create_card">Create Create</string>
+    <string name="create_deck">Create Deck</string>
     <string name="answer_label">Answer:</string>
+    <string name="deck_label">Deck:</string>
+    <string name="subject_label">Subject:</string>
+    <string name="main_menu_delete">Delete Selected</string>
+    <string name="main_menu_cancel_edit">Cancel Editing</string>
     
     <integer name="card_flip_time_half">800</integer>
     <integer name="card_flip_time_full">400</integer>

@@ -127,6 +127,20 @@ public class DatabaseAdapter
 		return "INSERT INTO Card (question,answer,deckId) VALUES (\""+question+"\",\""+answer+"\","+deckId+")";
 	}
 	
+	
+	public static String getCreateSectionQuery(String sectionName) {
+		return "INSERT INTO Section (name) values (\""+sectionName+"\")";
+	}
+	
+	public static String getSectionByNameQuery(String sectionName) {
+		return "SELECT * FROM Section where name = \""+sectionName+"\"";
+	}
+	
+	public static String getCreateDeckQuery(String deckName, long sectionId) {
+		return "INSERT INTO Deck (name,sectionId) values (\""+deckName+"\","+sectionId+")";
+	}
+
+	
 	public static String getRemoveCardQuery(long cardId){
 		return "DELETE FROM Card WHERE _id = "+cardId;
 	}
@@ -230,5 +244,7 @@ public class DatabaseAdapter
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
 	}//E: SQLiteHelper
+
+
 
 }

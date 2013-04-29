@@ -32,9 +32,18 @@
         <activity
             android:name="com.fyodorwolf.studybudy.CreateCardActivity"
             android:windowSoftInputMode="adjustResize"
-            android:label="@string/deck_name" >
+            android:label="@string/create_card" >
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_CARD" />
+                <category android:name="android.intent.category.APP" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.fyodorwolf.studybudy.CreateDeckActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:label="@string/create_deck" >
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_DECK" />
                 <category android:name="android.intent.category.APP" />
             </intent-filter>
         </activity>
