@@ -16,6 +16,7 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -121,7 +122,7 @@ public class CreateCardActivity extends Activity {
 			ImageView myImage = (ImageView)imageLayout.findViewById(R.id.imageView1);
 //			myImage.setImageURI(Uri.fromFile(imageFile));
 //			myImage.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-			ImageLoader.getInstance().displayImage(imageFile.getAbsolutePath(), myImage);
+			ImageLoader.getInstance().displayImage(Uri.fromFile(imageFile).toString(), myImage);
 			myImage.setVisibility(View.VISIBLE);
 			gallary.addView(imageLayout);
 		}
