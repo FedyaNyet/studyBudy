@@ -477,7 +477,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     }
     
     private AlertDialog deleteCard() {
-       AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
+    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
            //set message, title, and icon
            .setTitle("Delete Card") 
            .setMessage("Are you sure you want to delete this card?") 
@@ -501,6 +501,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                }
            })
            .create();
-           return myDeleteConfirmationBox;
-       }
+       return myDeleteConfirmationBox;
+   }
 }

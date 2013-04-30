@@ -8,8 +8,10 @@ import com.fyodorwolf.studybudy.helpers.QueryRunner;
 import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.models.*;
 
+import android.app.AlertDialog;
 import android.app.ExpandableListActivity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.DataSetObserver;
@@ -46,7 +48,6 @@ public class MainActivity extends ExpandableListActivity{
 	
 	ArrayList<Section> _myExpListData = new ArrayList<Section>();
 	HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
-	HashMap<Long,Integer> _deckPosition = new HashMap<Long,Integer>();
 	protected boolean searching = false;
 	
       
@@ -181,28 +182,31 @@ public class MainActivity extends ExpandableListActivity{
                 listView.setAdapter(myListViewAdapter);
                 expandListView();
                 break;
-            case R.id.main_menu_delete:	
-            	editing = false;
-            	//get checked items...
-            	//run query to delete checked decks..
-                this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-                this.listView.setItemsCanFocus(true);
-                listView.setAdapter(myListViewAdapter);
-                expandListView();
+            case R.id.main_menu_delete:
+            	if(listView.getCheckedItemCount()>0){
+            		deleteDecks().show();
+            	}else{
+                	doneEditing();
+            	}
                 break; 	
             case R.id.main_menu_cancel_edit:
-            	editing = false;
-                this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-                this.listView.setItemsCanFocus(true);
-                listView.setAdapter(myListViewAdapter);
-                expandListView();
+            	doneEditing();
                 break;
         }
     	return true;
     }
+    
     @Override public void onStart(){
     	listView.requestFocus();
         super.onStart();
+    }
+    
+    private void doneEditing(){
+    	editing = false;
+        this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        this.listView.setItemsCanFocus(true);
+        listView.setAdapter(myListViewAdapter);
+        expandListView();
     }
 
     protected void gotSections(Cursor result) {
@@ -225,7 +229,6 @@ public class MainActivity extends ExpandableListActivity{
 				}
 				Deck myDeck = new Deck(deckId,deckName);
 				section.addDeck(myDeck);//addDeck won't allow repeats..
-				_deckPosition.put(myDeck.id, _deckPosition.size());
 				//cursor row may have additional column when searching with matching card ids...
 				if(result.getColumnCount() > 4){
 					long cardId = result.getLong(4);
@@ -291,4 +294,42 @@ public class MainActivity extends ExpandableListActivity{
 		for (int position = 0; position < count; position++)
 		    listView.expandGroup(position);
     }
+    
+
+    
+    private AlertDialog deleteDecks() {
+    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
+           //set message, title, and icon
+           .setTitle("Delete Card") 
+           .setMessage("Are you sure you want to delete these decks?") 
+           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+        	   public void onClick(DialogInterface dialog, int whichButton) { 
+            	   	QueryRunner deleteDecks = new QueryRunner(myDB);
+               		deleteDecks.setQueryRunnerListener(new QueryRunnerListener(){
+	   					@Override public void onPostExcecute(Cursor cursor) {
+	   						QueryRunner deleteEmptySections = new QueryRunner(myDB);
+	   						deleteEmptySections.setQueryRunnerListener(new QueryRunnerListener(){
+	   							@Override public void onPostExcecute(Cursor cursor) {
+	   						        listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+	   						        listView.setItemsCanFocus(true);
+	   			               		doneEditing();
+	   								preformNormalSearch();
+	   					        }
+	   						});
+	   						deleteEmptySections.execute(DatabaseAdapter.getRemoveEmptySectionsQuery());
+	   					}
+	   				});
+	               	deleteDecks.execute(DatabaseAdapter.getRemoveDecksWithIdsQuery(listView.getCheckedItemIds()));
+               } 
+           })
+           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int which) {
+                   	dialog.dismiss();
+               		doneEditing();
+               }
+           })
+           .create();
+       return myDeleteConfirmationBox;
+   }
+    
 }
