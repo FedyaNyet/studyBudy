@@ -22,30 +22,35 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ListView;
+import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
 public class MainActivity extends ExpandableListActivity{
 
+	
 	EditText searchBox;
 	ExpandableListView listView;
 	private DatabaseAdapter myDB;
 	private static final String TAG = "MainActivity";
 	private boolean editing = false;
+	ExpandableListAdapter myListViewAdapter;
 	
 	ArrayList<Section> _myExpListData = new ArrayList<Section>();
 	HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
+	HashMap<Long,Integer> _deckPosition = new HashMap<Long,Integer>();
 	protected boolean searching = false;
 	
       
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         // define main views.
     	Log.d(TAG,"started");
 		setContentView(R.layout.list_view);
@@ -93,24 +98,30 @@ public class MainActivity extends ExpandableListActivity{
 
 			@Override
 			public boolean onChildClick(ExpandableListView parent, View child, int groupIdx, int childIdx, long deckId) {
-				Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
-				deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
-                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
-				deckIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
-				deckIntent.putExtra("com.fyodorwolf.studyBudy.deckName", ((TextView)child.findViewById(android.R.id.text1)).getText());
-				Deck clickedDeck = _myExpListData.get(groupIdx).getDeckById(deckId);
-				if(searching && clickedDeck.cards.size()>0){
-					//build an array of card id's to show in the next activity...
-					long[] cardIds = new long[clickedDeck.cards.size()];
-					int cardIdIdx = 0;
-					for(Card searchCard : clickedDeck.cards){
-						cardIds[cardIdIdx] = searchCard.id;
-						cardIdIdx++;
+				if(editing){
+					int position = parent.getPositionForView(child);
+					boolean curCheckState = ((CheckedTextView)child).isChecked();
+					listView.setItemChecked(position, !curCheckState);
+				}else{
+					Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
+					deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+	                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
+					deckIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
+					deckIntent.putExtra("com.fyodorwolf.studyBudy.deckName", ((TextView)child.findViewById(android.R.id.text1)).getText());
+					Deck clickedDeck = _myExpListData.get(groupIdx).getDeckById(deckId);
+					if(searching && clickedDeck.cards.size()>0){
+						//build an array of card id's to show in the next activity...
+						long[] cardIds = new long[clickedDeck.cards.size()];
+						int cardIdIdx = 0;
+						for(Card searchCard : clickedDeck.cards){
+							cardIds[cardIdIdx] = searchCard.id;
+							cardIdIdx++;
+						}
+						deckIntent.putExtra("com.fyodorwolf.studyBudy.cardIds", cardIds);
 					}
-					deckIntent.putExtra("com.fyodorwolf.studyBudy.cardIds", cardIds);
+					startActivity(deckIntent);
 				}
-				startActivity(deckIntent);
-				return false;
+				return true;
 			}
 		});
         
@@ -126,7 +137,6 @@ public class MainActivity extends ExpandableListActivity{
 			}
 		});
         sectionsQuery.execute(DatabaseAdapter.getGroupedDeckQuery());
-		
 	}
 
 	@Override public boolean onCreateOptionsMenu(Menu menu) {
@@ -166,23 +176,26 @@ public class MainActivity extends ExpandableListActivity{
             	break;
             case R.id.main_menu_edit_list:
             	editing = true;
-                this.listView.setItemsCanFocus(false);
-                this.listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-                listView.invalidate();
+            	listView.setChoiceMode(ExpandableListView.CHOICE_MODE_MULTIPLE);
+                listView.setItemsCanFocus(false);
+                listView.setAdapter(myListViewAdapter);
+                expandListView();
                 break;
-            case R.id.main_menu_delete:
+            case R.id.main_menu_delete:	
             	editing = false;
-                this.listView.setItemsCanFocus(true);
+            	//get checked items...
+            	//run query to delete checked decks..
                 this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-                ExpandableListAdapter myAdapter = (ExpandableListAdapter)listView.getAdapter();
-                myAdapter.getChildView(0, 0, false, convertView, listView);
-                listView.invalidate();
-                break;
+                this.listView.setItemsCanFocus(true);
+                listView.setAdapter(myListViewAdapter);
+                expandListView();
+                break; 	
             case R.id.main_menu_cancel_edit:
             	editing = false;
-                this.listView.setItemsCanFocus(true);
                 this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-                listView.invalidate();
+                this.listView.setItemsCanFocus(true);
+                listView.setAdapter(myListViewAdapter);
+                expandListView();
                 break;
         }
     	return true;
@@ -207,10 +220,12 @@ public class MainActivity extends ExpandableListActivity{
 				Section section = _sectionIdMap.get(sectionId);
 				if(section == null){
 					section = new Section(sectionId, sectionName);
-					_myExpListData.add(section);
 					_sectionIdMap.put(sectionId, section);
+					_myExpListData.add(section);
 				}
-				section.addDeck(new Deck(deckId,deckName));//won't allow repeats..
+				Deck myDeck = new Deck(deckId,deckName);
+				section.addDeck(myDeck);//addDeck won't allow repeats..
+				_deckPosition.put(myDeck.id, _deckPosition.size());
 				//cursor row may have additional column when searching with matching card ids...
 				if(result.getColumnCount() > 4){
 					long cardId = result.getLong(4);
@@ -220,74 +235,60 @@ public class MainActivity extends ExpandableListActivity{
 			}
 		}
 		
-		listView.setAdapter(new ExpandableListAdapter(){
-			@Override
-			public Object getChild(int groupPosition, int childPosition) {
-				return _myExpListData.get(groupPosition).decks.get(childPosition);
-			}
-
-			@Override
-			public long getChildId(int groupPosition, int childPosition) {
-				return _myExpListData.get(groupPosition).decks.get(childPosition).id;
-			}
-
-			@Override
-			public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-				View item = LayoutInflater.from(getApplicationContext()).inflate(android.R.layout.simple_list_item_activated_1, null);
-				TextView tv = (TextView) item.findViewById(android.R.id.text1);
-				Deck deck = (Deck) getChild(groupPosition,childPosition);
-				tv.setText(deck.name);
-				tv.setTextColor(Color.BLACK);
-				tv.setBackgroundColor(Color.WHITE);
-				tv.getBackground().setAlpha(95);
-				return item;
-			}
-
-			@Override
-			public int getChildrenCount(int groupPosition) {
-				return _myExpListData.get(groupPosition).decks.size();
-			}
-
-			@Override
-			public Object getGroup(int groupPosition) {
-				return _myExpListData.get(groupPosition);
-			}
-
-			@Override
-			public int getGroupCount() {
-				return _myExpListData.size();
-			}
-
-			@Override
-			public long getGroupId(int groupPosition) {
-				return _myExpListData.get(groupPosition).id;
-			}
-
-			@Override
-			public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-				View item = LayoutInflater.from(getApplicationContext()).inflate(android.R.layout.simple_expandable_list_item_1,null);
-				item.setBackgroundColor(Color.GRAY);
-				TextView tv = (TextView) item.findViewById(android.R.id.text1);
-				Section sec = (Section) getGroup(groupPosition);
-				tv.setText(sec.name);
-				tv.setTextColor(Color.WHITE);
-				return item;
-			}
-
+		myListViewAdapter = new ExpandableListAdapter(){
+			@Override public Object getGroup(int groupPosition) {return _myExpListData.get(groupPosition);	}
+			@Override public Object getChild(int groupPosition, int childPosition) {return _myExpListData.get(groupPosition).decks.get(childPosition);}
+			@Override public int getChildrenCount(int groupPosition) {	return _myExpListData.get(groupPosition).decks.size();}
+			@Override public int getGroupCount() { return _myExpListData.size();}
+			@Override public long getChildId(int groupPosition, int childPosition) {return _myExpListData.get(groupPosition).decks.get(childPosition).id;}
+			@Override public long getGroupId(int groupPosition) { return _myExpListData.get(groupPosition).id;}
 			@Override public long getCombinedChildId(long groupId, long childId) {return childId;}
 			@Override public long getCombinedGroupId(long groupId) { return groupId;}
 			@Override public boolean areAllItemsEnabled() { return true; }
 			@Override public boolean hasStableIds() {return true;}
 			@Override public boolean isChildSelectable(int groupPosition, int childPosition) { return true;}
-			@Override public boolean isEmpty() {return false;}
-
+			@Override public boolean isEmpty() {return _myExpListData.isEmpty();}
+			
 			@Override public void onGroupCollapsed(int groupPosition) {}
 			@Override public void onGroupExpanded(int groupPosition) {}
 			@Override public void registerDataSetObserver(DataSetObserver observer) {}
 			@Override public void unregisterDataSetObserver(DataSetObserver observer) {}
-		});
+			
+			@Override
+			public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+				LayoutInflater myInflator = LayoutInflater.from(getApplicationContext());
+				TextView item;
+				if(editing){
+					item = (TextView) myInflator.inflate(android.R.layout.simple_list_item_multiple_choice,null);
+				}else{
+					item = (TextView) myInflator.inflate(android.R.layout.simple_list_item_activated_1, null);
+				}
+				item.setMinHeight(96);
+				item.setText(((Deck)getChild(groupPosition,childPosition)).name);
+				item.setTextColor(Color.BLACK);
+				item.setBackgroundColor(Color.WHITE);
+//				item.getBackground().setAlpha(95);
+				return item;
+			}
+			
+			@Override
+			public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
+				Section sec = (Section) getGroup(groupPosition);
+				LayoutInflater myInflator = LayoutInflater.from(getApplicationContext());
+				TextView item = (TextView)myInflator.inflate(android.R.layout.simple_expandable_list_item_1,null);
+				item.setBackgroundColor(Color.GRAY);
+				item.setText(sec.name);
+				item.setTextColor(Color.WHITE);
+				return item;
+			}
+		};
+		expandListView();
+	}
+    
+    public void expandListView(){
+		listView.setAdapter(myListViewAdapter);
 		int count = listView.getExpandableListAdapter().getGroupCount();
 		for (int position = 0; position < count; position++)
 		    listView.expandGroup(position);
-	}
+    }
 }

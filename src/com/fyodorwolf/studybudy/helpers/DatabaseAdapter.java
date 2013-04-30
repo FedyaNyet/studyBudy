@@ -145,6 +145,19 @@ public class DatabaseAdapter
 		return "DELETE FROM Card WHERE _id = "+cardId;
 	}
 	
+	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
+		String ids = "";
+    	for(long deckId:deckIds){
+    		ids += Long.toString(deckId)+","; 
+    	}
+    	ids = ids.substring(0,ids.length()-1);
+		return "DELETE FROM Deck WHERE _id IN ("+ids+")";
+	}
+	
+	public static String getRemoveEmptySectionsQuery(){
+		return "DELETE FROM Section WHERE _id NOT IN (SELECT DISTINCT(sectionId) from Deck)";
+	}
+	
 	public static String getGroupedDeckQuery(){
 		return "SELECT " +
 					"sec._id," +
