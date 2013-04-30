@@ -61,7 +61,7 @@ public class MainActivity extends ExpandableListActivity{
     	searchBox = (EditText) this.findViewById(R.id.edit_text);
 	    searchBox.getBackground().setAlpha(95);
     	listView = this.getExpandableListView();
-		myDB = DatabaseAdapter.getInstance(this);
+		myDB = DatabaseAdapter.getInstance();
 
 		/* SHOW ALL SECTIONS AND DECKS */
     	preformNormalSearch();

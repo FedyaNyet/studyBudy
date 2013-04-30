@@ -20,19 +20,25 @@ public class DatabaseAdapter
 	protected static final String TAG = "DataAdapter";
     
 	//this is a singleton class
-	private static DatabaseAdapter instance = null;
+	private static volatile DatabaseAdapter instance;
     private SQLiteDatabase mDb;
     private SQLiteHelper mDbHelper;
 
-    private DatabaseAdapter(Context context){
+    private DatabaseAdapter(){}
+    
+    public void init(Context context){
         mDbHelper = new SQLiteHelper(context);
         this.createDatabase();
         this.open();
     }
 
-	public static DatabaseAdapter getInstance(Context context) {
-		if(instance == null) {
-			instance = new DatabaseAdapter(context);
+	public static DatabaseAdapter getInstance() {
+		if(instance == null){
+			synchronized(DatabaseAdapter.class){
+				if(instance == null){
+					instance = new DatabaseAdapter();
+				}
+			}
 		}
 		return instance;
 	}

@@ -42,7 +42,7 @@ public class CreateDeckActivity extends Activity{
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 		setTitle("Create New Deck");
 		
-		myDb = DatabaseAdapter.getInstance(getApplicationContext());
+		myDb = DatabaseAdapter.getInstance();
 		deckInput = (EditText) this.findViewById(R.id.deck_name_input);
 		groupSelect = (Spinner) this.findViewById(R.id.deck_group_select);
 		groupInput = (EditText) this.findViewById(R.id.deck_group_input);

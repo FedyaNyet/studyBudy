@@ -104,7 +104,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		});
         
         /* SET CARD DATA */
-    	myDB = DatabaseAdapter.getInstance(this);
+    	myDB = DatabaseAdapter.getInstance();
     	QueryRunner query = new QueryRunner(myDB);
     	query.setQueryRunnerListener(new QueryRunnerListener(){
 			@Override public void onPostExcecute(Cursor cards) {
