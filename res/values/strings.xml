@@ -38,6 +38,8 @@
     <string name="add_images">Add Images</string>
     <string name="row_multiphoto_desc">Select image</string>
     <string name="multi_photo_select">Mutliple Photo Select Activity</string>
+    <string name="choose_photos">Choose Photos</string>
+    
     <integer name="card_flip_time_half">800</integer>
     <integer name="card_flip_time_full">400</integer>
     

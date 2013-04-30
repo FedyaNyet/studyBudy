@@ -12,16 +12,15 @@
         android:horizontalSpacing="4dip"
         android:numColumns="auto_fit"
         android:stretchMode="columnWidth"
-        android:layout_above="@+id/button1"
+        android:layout_above="@+id/choose_photos"
         android:verticalSpacing="2dip" />
  
     <Button
-        android:id="@+id/button1"
+        android:id="@+id/choose_photos"
         android:layout_alignParentBottom="true"
-        android:layout_width="wrap_content"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:onClick="btnChoosePhotosClick"
-        android:text="Select Photos" />
+        android:text="@string/choose_photos"/>
  
 </RelativeLayout>

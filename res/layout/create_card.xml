@@ -67,7 +67,27 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/TableRow01"
+            android:id="@+id/create_card_gallary_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <HorizontalScrollView
+                android:id="@+id/horizontalScrollView1"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content" >
+                
+                <LinearLayout
+                    android:id="@+id/create_card_gallary"
+                    android:layout_width="fill_parent"
+                    android:layout_height="150dp" >
+                </LinearLayout>
+
+            </HorizontalScrollView>
+
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/TableRow3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:focusable="true"
@@ -83,7 +103,7 @@
         </TableRow>
 
         <TableRow
-            android:id="@+id/tableRow3"
+            android:id="@+id/tableRow5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" 
 		    android:focusable="true"

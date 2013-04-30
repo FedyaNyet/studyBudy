@@ -8,13 +8,13 @@
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:contentDescription="@string/row_multiphoto_desc"
-        android:src="@drawable/ic_launcher" />
- 
+        android:src="@drawable/gallary_default" />
+
     <CheckBox
         android:id="@+id/checkBox1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/imageView1"
-        android:layout_centerVertical="true"/>
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true" />
  
 </RelativeLayout>
