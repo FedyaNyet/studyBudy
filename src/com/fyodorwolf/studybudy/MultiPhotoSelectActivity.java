@@ -38,35 +38,35 @@ public class MultiPhotoSelectActivity extends Activity {
     
     public static final String RESULT_BUNDLE_INDENTIFIER = "com.fyodorwolf.studyBudy.imageStrings";
  
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
+    @Override  public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        /*VIEW SETUP & INSTANTIATION*/
         setContentView(R.layout.ac_image_grid);
         setTitle("Select Card Images");
  
+        /*FETCH MEDIA*/
         final String[] columns = { MediaStore.Images.Media.DATA, MediaStore.Images.Media._ID };
-        final String orderBy = MediaStore.Images.Media.DATE_TAKEN;
         Cursor imagecursor = this.getContentResolver().query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, null, null, orderBy + " DESC"
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, null, null, MediaStore.Images.Media.DATE_TAKEN+" DESC"
         );
  
+        /*SET GRIDVIEW ADAPTER*/
         this.imageUrls = new ArrayList<String>();
- 
         for (int i = 0; i < imagecursor.getCount(); i++) {
             imagecursor.moveToPosition(i);
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
             imageUrls.add(imagecursor.getString(dataColumnIndex));
         }
- 
         imageAdapter = new ImageAdapter(this, imageUrls);
+        ((GridView)findViewById(R.id.gridview)).setAdapter(imageAdapter);
         
+        /*ACTIONS*/
         ((Button)findViewById(R.id.choose_photos)).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v) {          
 				ArrayList<String> selectedItems = imageAdapter.getCheckedItems();
 				String[] files = new String[selectedItems.size()];
 	          	selectedItems.toArray(files);
-	          	//put extras -> go to parent.
-	          	
 	          	Intent resultIntent = new Intent();
 	          	resultIntent.putExtra(RESULT_BUNDLE_INDENTIFIER, files);
 	          	setResult(Activity.RESULT_OK, resultIntent);
@@ -74,8 +74,6 @@ public class MultiPhotoSelectActivity extends Activity {
 			}
         });
         
-        GridView gridView = (GridView) findViewById(R.id.gridview);
-        gridView.setAdapter(imageAdapter);
     }
  
     @Override protected void onStop() {

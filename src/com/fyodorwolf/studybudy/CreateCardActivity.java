@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.fyodorwolf.studybudy.helpers.QueryRunner;
 import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -24,6 +26,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -35,12 +38,15 @@ public class CreateCardActivity extends Activity {
 	private CreateCardActivity thisActivity;
 	
 	ArrayList<File> imageFiles = new ArrayList<File>();
+	String[] imagePaths;
 	
 	private static final int IMAGE_REQUEST_CODE = 1;
 
 	@Override protected void onCreate(Bundle savedInstanceState){
+        super.onCreate(savedInstanceState);
 		setContentView(R.layout.create_card);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
+		thisActivity = this;
 		deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
 		deckName =  getIntent().getExtras().getString("com.fyodorwolf.studyBudy.deckName");
 		setTitle("Add New Card to "+deckName);
@@ -48,7 +54,7 @@ public class CreateCardActivity extends Activity {
 		final TextView answer = (TextView) this.findViewById(R.id.answer_input);
 		hideImageGallary();
 		
-		this.findViewById(R.id.create_card).setOnClickListener(new OnClickListener(){
+		findViewById(R.id.create_card).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v){
 				String question_text = question.getText().toString();
 				String answer_text = answer.getText().toString();
@@ -81,21 +87,18 @@ public class CreateCardActivity extends Activity {
 				startActivityForResult(multiSelect,IMAGE_REQUEST_CODE);
 			}
 		});
-		thisActivity = this;
-        super.onCreate(savedInstanceState);
 	}
 	
 	@Override public void onActivityResult(int requestCode, int resultCode, Intent data) {   
 		if(data != null && resultCode == Activity.RESULT_OK){
 			switch(requestCode) { 
 			  	case (IMAGE_REQUEST_CODE) :
-					String[] imagePaths = data.getStringArrayExtra("com.fyodorwolf.studyBudy.imageStrings");
+					imagePaths = data.getStringArrayExtra("com.fyodorwolf.studyBudy.imageStrings");
 					imageFiles.clear();
 					hideImageGallary();
 					if(imagePaths.length>0){
 						for(String imagePath : imagePaths){
-							File imageFile = new File(imagePath);
-							imageFiles.add(imageFile);
+							imageFiles.add(new File(imagePath));
 						}
 						showImageGallary();
 					}
@@ -116,14 +119,23 @@ public class CreateCardActivity extends Activity {
 		LinearLayout gallary =  (LinearLayout) tableRow.findViewById(R.id.create_card_gallary);
 		((Button)this.findViewById(R.id.add_images)).setText("Change Images");
 		gallary.removeAllViews();
-		for(File imageFile : imageFiles){
+		for(final File imageFile : imageFiles){
 			View imageLayout =  getLayoutInflater().inflate(R.layout.row_multiphoto_item, null);
 			imageLayout.findViewById(R.id.checkBox1).setVisibility(View.GONE);
-			ImageView myImage = (ImageView)imageLayout.findViewById(R.id.imageView1);
-//			myImage.setImageURI(Uri.fromFile(imageFile));
-//			myImage.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-			ImageLoader.getInstance().displayImage(Uri.fromFile(imageFile).toString(), myImage);
+			ImageView myImage;
+			myImage = (ImageView)imageLayout.findViewById(R.id.imageView1);
+			myImage.setScaleType(ScaleType.FIT_END);
 			myImage.setVisibility(View.VISIBLE);
+			myImage.setOnClickListener(new OnClickListener(){
+				@Override public void onClick(View imageView) {
+					Intent intent = new Intent();
+					intent.setAction(android.content.Intent.ACTION_VIEW); 
+					intent.setDataAndType(Uri.fromFile(imageFile),"image/*");
+					startActivity(intent);
+				}
+			});
+			String path = Uri.fromFile(imageFile).toString();
+			ImageLoader.getInstance().displayImage(path, myImage);
 			gallary.addView(imageLayout);
 		}
 		

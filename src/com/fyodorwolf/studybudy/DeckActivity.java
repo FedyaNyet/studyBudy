@@ -215,8 +215,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     			}
 				break;
     	}
-		Log.d(TAG,"nowShowing:"+myDeckAdapter.currentStack);
-    	Log.d(TAG,"C/W/N: "+myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]+", "+myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG]+", "+myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED]);
+//		Log.d(TAG,"nowShowing:"+myDeckAdapter.currentStack);
+//    	Log.d(TAG,"C/W/N: "+myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]+", "+myDeckAdapter.stackCounts[DeckAdapter.STACK_WRONG]+", "+myDeckAdapter.stackCounts[DeckAdapter.STACK_NOT_ANSWERED]);
 		return true;
     }
 
