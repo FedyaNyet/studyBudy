@@ -110,7 +110,7 @@ public class CreateDeckActivity extends Activity{
 											createGroupWithNameAndSectionId(deckText, sectionId);
 										}
 									});
-									getSectionId.execute(DatabaseAdapter.getSectionByNameQuery(groupName));
+									getSectionId.execute(DatabaseAdapter.getLastSectionIdQuery());
 									
 								}
 							});

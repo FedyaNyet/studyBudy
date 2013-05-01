@@ -11,9 +11,7 @@ import java.util.ArrayList;
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.fyodorwolf.studybudy.helpers.QueryRunner;
 import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -58,30 +56,54 @@ public class CreateCardActivity extends Activity {
 			@Override public void onClick(View v){
 				String question_text = question.getText().toString();
 				String answer_text = answer.getText().toString();
-				Log.d(TAG,"q:"+question_text+" a:"+answer_text);
 				if(question_text.length()>0 && answer_text.length()>0){
+					final String[] absPaths = new String[imageFiles.size()];
+					int absPathIdx = 0; 
 					if(imageFiles.size()>0){
+						//MOVE ALL THE PHOTO FILES TO APP DIRECTORY
 						for(File imageFile: imageFiles){
-							String newImagePath = getApplicationContext().getFilesDir().getPath()+"/images/"+imageFile.getName();
+							String newImagePath = getApplicationContext().getFilesDir()+imageFile.getName();
 							File newImageFile = new File(newImagePath);
+							Log.d(TAG, "filename"+newImagePath);
 							try{
 								copy(imageFile,newImageFile);
+								absPaths[absPathIdx++] = newImagePath;
+								Log.d(TAG,"absPath:"+absPaths[absPathIdx-1]);
 							}catch(Exception e){
-								Log.d(TAG, "unable to copy files");
+								Log.e(TAG, "unable to copy files");
 							}
 						}
 					}
 					QueryRunner createCard = new QueryRunner(DatabaseAdapter.getInstance());
 					createCard.setQueryRunnerListener(new QueryRunnerListener(){
 						@Override public void onPostExcecute(Cursor cards) {
-							backToParentActivity();
+							if(absPaths.length>0){
+								//ADD PHOTOS TO DATABASE
+								QueryRunner getCardId = new QueryRunner(DatabaseAdapter.getInstance());
+								getCardId.setQueryRunnerListener(new QueryRunnerListener(){
+									@Override public void onPostExcecute(Cursor cursor) {
+										long cardId = cursor.getLong(0);
+										QueryRunner addImagesToCard = new QueryRunner(DatabaseAdapter.getInstance());
+										addImagesToCard.setQueryRunnerListener(new QueryRunnerListener(){
+											@Override public void onPostExcecute(Cursor cursor) {
+												backToParentActivity();
+											}
+										});
+										addImagesToCard.execute(DatabaseAdapter.getCreatePhotoQuery(absPaths,cardId));
+									}
+									
+								});
+								getCardId.execute(DatabaseAdapter.getLastCardIdQuery());
+							}else{
+								backToParentActivity();
+							}
 						}
 					});
-					createCard.execute(DatabaseAdapter.getCreateNewCardQuery(question_text,answer_text,deckId));
+					createCard.execute(DatabaseAdapter.getCreateCardQuery(question_text,answer_text,deckId));
 				}
 			}
 		});
-		this.findViewById(R.id.add_images).setOnClickListener(new OnClickListener(){
+		findViewById(R.id.add_images).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v) {
 				Intent multiSelect = new Intent(thisActivity, MultiPhotoSelectActivity.class);
 				startActivityForResult(multiSelect,IMAGE_REQUEST_CODE);
@@ -152,17 +174,20 @@ public class CreateCardActivity extends Activity {
     }
     
     public void copy(File src, File dst) throws IOException {
-        InputStream in = new FileInputStream(src);
-        OutputStream out = new FileOutputStream(dst);
-
-        // Transfer bytes from in to out
-        byte[] buf = new byte[1024];
-        int len;
-        while ((len = in.read(buf)) > 0) {
-            out.write(buf, 0, len);
+		if (!dst.getParentFile().exists() && !dst.getParentFile().mkdirs()){
+			Log.d(TAG,"Unable to create:" + dst.getParentFile());
+		}
+        InputStream mInput = new FileInputStream(src);
+        OutputStream mOutput = new FileOutputStream(dst);
+        byte[] mBuffer = new byte[1024];
+        int mLength;
+        while ((mLength = mInput.read(mBuffer))>0)
+        {
+            mOutput.write(mBuffer, 0, mLength);
         }
-        in.close();
-        out.close();
+        mOutput.flush();
+        mOutput.close();
+        mInput.close();
     }
     
 	private void backToParentActivity() {

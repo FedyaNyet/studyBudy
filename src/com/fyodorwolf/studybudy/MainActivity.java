@@ -77,7 +77,6 @@ public class MainActivity extends ExpandableListActivity{
     	            	preformNormalSearch();
     	        	}else{
     	        		searching = true;
-    	        		Log.d(TAG,"Search: "+searchString);
                     	QueryRunner sectionsQuery = new QueryRunner(myDB);
                         sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
                 			@Override public void onPostExcecute(Cursor cards) {

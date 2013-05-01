@@ -1,5 +1,7 @@
 package com.fyodorwolf.studybudy;
 
+import java.io.File;
+
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.fyodorwolf.studybudy.helpers.DeckAdapter;
 import com.fyodorwolf.studybudy.helpers.QueryRunner;
@@ -7,12 +9,14 @@ import com.fyodorwolf.studybudy.helpers.ViewFlipper;
 import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.helpers.ViewFlipper.ViewSwapperListener;
 import com.fyodorwolf.studybudy.models.*;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -25,10 +29,13 @@ import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageView.ScaleType;
 import android.support.v4.view.ViewPager;
 
 public class DeckActivity extends Activity implements ViewPager.PageTransformer {
@@ -457,6 +464,42 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	
     private void setViewForCard(Card card){
     	
+    	QueryRunner getPhotos = new QueryRunner(DatabaseAdapter.getInstance());
+    	getPhotos.setQueryRunnerListener(new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cursor) {
+				View tableRow = DeckActivity.this.findViewById(R.id.card_front_row);
+				tableRow.setVisibility(View.VISIBLE);
+				LinearLayout gallary =  (LinearLayout) tableRow.findViewById(R.id.card_front_gallary);
+				gallary.removeAllViews();
+				cursor.moveToPosition(-1);
+				while(cursor.moveToNext()){
+					long photoId = cursor.getLong(0);
+					String filename = cursor.getString(1);
+					Log.d(TAG,"filename:"+filename);
+					int position = cursor.getInt(2);
+					final File imageFile = new File(filename);
+					View imageLayout =  getLayoutInflater().inflate(R.layout.row_multiphoto_item, null);
+					imageLayout.findViewById(R.id.checkBox1).setVisibility(View.GONE);
+					ImageView myImage;
+					myImage = (ImageView)imageLayout.findViewById(R.id.imageView1);
+					myImage.setScaleType(ScaleType.FIT_END);
+					myImage.setVisibility(View.VISIBLE);
+					myImage.setOnClickListener(new OnClickListener(){
+						@Override public void onClick(View imageView) {
+							Intent intent = new Intent();
+							intent.setAction(android.content.Intent.ACTION_VIEW); 
+							intent.setDataAndType(Uri.fromFile(imageFile),"image/*");
+							startActivity(intent);
+						}
+					});
+					String path = Uri.fromFile(imageFile).toString();
+					ImageLoader.getInstance().displayImage(path, myImage);
+					gallary.addView(imageLayout);
+				}
+			}
+		});
+    	getPhotos.execute(DatabaseAdapter.getPhotosWithCardIdQuery(card.id));
+    	
 		/*make sure the order is correct to produce the stack effect...*/
 		cardFront.bringToFront();
 		cardBack.bringToFront();
@@ -474,6 +517,10 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		cardFront.setVisibility(View.VISIBLE);
 		cardBack.setVisibility(View.GONE);
 		actionsView.setVisibility(View.VISIBLE);
+
+		
+		
+		
     }
     
     private AlertDialog deleteCard() {

@@ -15,7 +15,7 @@ import android.util.Log;
 
 public class DatabaseAdapter
 {
-	public final static boolean WIPE_DATABASE = false;
+	public final static boolean WIPE_DATABASE = true;
 	
 	protected static final String TAG = "DataAdapter";
     
@@ -114,43 +114,60 @@ public class DatabaseAdapter
     		ids += Long.toString(cardId)+","; 
     	}
     	ids = ids.substring(0,ids.length()-1);
-		return "SELECT _id, question, answer, status, numberInDeck FROM Card where _id IN ("+ids+")";
+		return "SELECT _id, question, answer, status, numberInDeck FROM Card JOIN WERE _id IN ("+ids+")";
 	}
 	
 	public static String getCardsWithDeckIdQuery(long DeckId){
 		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId = "+DeckId;
 	}
 	
-	public static String getCardUpdateStatusQuery(float cardId, int status){
-		return "UPDATE Card SET status = "+status+" WHERE  _id = "+cardId;
-	}
-	
 	public static String getCardsWithDeckIdAndStatusQuery(long DeckId, int status){
 		return getCardsWithDeckIdQuery(DeckId)+" and status = "+status;
 	}
 	
-	public static String getCreateNewCardQuery(String question, String answer,long deckId) {
+	public static String getCardUpdateStatusQuery(float cardId, int status){
+		return "UPDATE Card SET status = "+status+" WHERE  _id = "+cardId;
+	}
+	
+	public static String getCreateCardQuery(String question, String answer,long deckId) {
 		return "INSERT INTO Card (question,answer,deckId) VALUES (\""+question+"\",\""+answer+"\","+deckId+")";
 	}
 	
+	public static String getLastCardIdQuery() {
+		return "SELECT MAX(_id) from Card";
+	}
+
+	public static String getRemoveCardQuery(long cardId){
+		return "DELETE FROM Card WHERE _id = "+cardId;
+	}
 	
 	public static String getCreateSectionQuery(String sectionName) {
 		return "INSERT INTO Section (name) values (\""+sectionName+"\")";
 	}
 	
-	public static String getSectionByNameQuery(String sectionName) {
-		return "SELECT * FROM Section where name = \""+sectionName+"\"";
+	public static String getLastSectionIdQuery() {
+		return "SELECT MAX(_id) FROM Section where";
 	}
 	
 	public static String getCreateDeckQuery(String deckName, long sectionId) {
 		return "INSERT INTO Deck (name,sectionId) values (\""+deckName+"\","+sectionId+")";
 	}
-
 	
-	public static String getRemoveCardQuery(long cardId){
-		return "DELETE FROM Card WHERE _id = "+cardId;
+	public static String getCreatePhotoQuery(String[] imagePaths, long cardId) {
+		String values= "";
+		int orderNum = 0;
+		for(String path: imagePaths){
+			values += "(\""+path+"\","+cardId+","+orderNum+"),";
+			orderNum++;
+		}
+		values = values.substring(0,values.length()-1);
+		return "INSERT INTO Photo (filename,cardId,orderNum) values "+values;
 	}
-	
+	public static String getPhotosWithCardIdQuery(long cardId){
+		return "SELECT _id, filename, orderNum FROM Photo where cardId = "+cardId;
+	}
+
+
 	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
 		String ids = "";
     	for(long deckId:deckIds){
@@ -235,8 +252,7 @@ public class DatabaseAdapter
 	    private void copyDataBase() throws IOException
 	    {
 	        InputStream mInput = mContext.getAssets().open(DB_NAME);
-	        String outFileName = DB_PATH + DB_NAME;
-	        OutputStream mOutput = new FileOutputStream(outFileName);
+	        OutputStream mOutput = new FileOutputStream(DB_PATH + DB_NAME);
 	        byte[] mBuffer = new byte[1024];
 	        int mLength;
 	        while ((mLength = mInput.read(mBuffer))>0)
@@ -263,7 +279,5 @@ public class DatabaseAdapter
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
 	}//E: SQLiteHelper
-
-
 
 }
