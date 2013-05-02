@@ -464,11 +464,14 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					myCard = new Card(cardId,cardQuestion,cardAnswer,cardStatus,cardPosition);
 					myDeckAdapter.addCard(myCard);
 				}
-				Integer photoId = result.getInt(5);
-				String photoFileName = result.getString(6);
-				Integer photoOrderNum = result.getInt(7);
-				Photo newPhoto = new Photo(photoId,photoFileName,photoOrderNum);
-				myCard.photos.add(newPhoto);
+				Log.d(TAG, "val:"+Integer.toString(result.getInt(5)));
+				if(result.getInt(5) != 0){
+					Integer photoId = result.getInt(5);
+					String photoFileName = result.getString(6);
+					Integer photoOrderNum = result.getInt(7);
+					Photo newPhoto = new Photo(photoId,photoFileName,photoOrderNum);
+					myCard.photos.add(newPhoto);
+				}
 			}
 	    	setViewForCard(myDeckAdapter.getCurrentCard());
 	    	
@@ -510,6 +513,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		View tableRow = this.findViewById(R.id.card_front_gallery_row);
 		tableRow.setVisibility(View.GONE);
     	if(card.photos.size()>0){
+    		Log.d(TAG,Integer.toString(card.photos.size()));
     		tableRow.setVisibility(View.VISIBLE);
     		final ArrayList<Photo> galleryItems = card.photos;
     		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
