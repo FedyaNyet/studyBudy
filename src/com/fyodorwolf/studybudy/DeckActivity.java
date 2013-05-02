@@ -526,12 +526,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	tableRow.setVisibility(View.GONE);
     	if(card.photos.size()>0){
 
-    		Log.d(TAG,"-------------------------------------------------------");
-    		for(Card mCard : myDeckAdapter.getAllDeck().cards){
-				for(Photo photo: mCard.photos){
-					Log.d(TAG, Long.toString(mCard.id)+"	"+Long.toString(photo.id)+"	"+photo.filename);
-				}
-			}
     		tableRow.setVisibility(View.VISIBLE);
     		final ArrayList<Photo> galleryItems = card.photos;
     		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);

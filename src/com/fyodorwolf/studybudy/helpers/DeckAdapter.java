@@ -82,7 +82,10 @@ public class DeckAdapter{
 	}
 	
 	public void clear(){
+		allStack.cards.clear();
+		allStackCardIdToIndexMap.clear();
 		workingStack.cards.clear();
+		workingStackCardIdToIndexMap.clear();
 		stackIndex = 0;
 	}
 	
