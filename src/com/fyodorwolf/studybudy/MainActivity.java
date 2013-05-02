@@ -49,8 +49,11 @@ public class MainActivity extends ExpandableListActivity{
 	ArrayList<Section> _myExpListData = new ArrayList<Section>();
 	HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
 	protected boolean searching = false;
+
+    public static String SECTION_NAMES_EXTRAS_KEY = "com.fyodorwolf.studyBudy.sectionNames";
+    public static String SECTION_IDS_EXTRAS_KEY = "com.fyodorwolf.studyBudy.sectionIds"; 
 	
-      
+    		
     @Override protected void onCreate(Bundle savedInstanceState) {
         // define main views.
     	Log.d(TAG,"started");
@@ -109,8 +112,8 @@ public class MainActivity extends ExpandableListActivity{
 					Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
 					deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
 	                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
-					deckIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
-					deckIntent.putExtra("com.fyodorwolf.studyBudy.deckName", ((TextView)child.findViewById(android.R.id.text1)).getText());
+					deckIntent.putExtra(DeckActivity.DECK_ID_EXTRAS_KEY, deckId);
+					deckIntent.putExtra(DeckActivity.DECK_NAME_EXTRAS_KEY, ((TextView)child.findViewById(android.R.id.text1)).getText());
 					Deck clickedDeck = _myExpListData.get(groupIdx).getDeckById(deckId);
 					if(searching && clickedDeck.cards.size()>0){
 						//build an array of card id's to show in the next activity...
@@ -120,7 +123,7 @@ public class MainActivity extends ExpandableListActivity{
 							cardIds[cardIdIdx] = searchCard.id;
 							cardIdIdx++;
 						}
-						deckIntent.putExtra("com.fyodorwolf.studyBudy.cardIds", cardIds);
+						deckIntent.putExtra(DeckActivity.CARD_IDS_EXTRAS_KEY, cardIds);
 					}
 					startActivity(deckIntent);
 				}
@@ -173,8 +176,8 @@ public class MainActivity extends ExpandableListActivity{
             		sectionNames[idx] = _myExpListData.get(idx).name;
             		sectionIds[idx] = _myExpListData.get(idx).id;
             	}
-            	createDeckIntent.putExtra("com.fyodorwolf.studyBudy.sectionNames", sectionNames);
-            	createDeckIntent.putExtra("com.fyodorwolf.studyBudy.sectionIds", sectionIds);
+            	createDeckIntent.putExtra(SECTION_NAMES_EXTRAS_KEY, sectionNames);
+            	createDeckIntent.putExtra(SECTION_IDS_EXTRAS_KEY, sectionIds);
             	startActivity(createDeckIntent);
             	break;
             case R.id.main_menu_edit_list:

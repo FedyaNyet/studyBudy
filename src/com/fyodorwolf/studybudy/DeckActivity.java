@@ -71,6 +71,10 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     private static final int SWIPE_MAX_OFF_PATH = 250;
     private static final int SWIPE_THRESHOLD_VELOCITY = 2000;
 	private static final long ANIMATION_DURATION = 300;
+
+	public static final String DECK_ID_EXTRAS_KEY = "com.fyodorwolf.studyBudy.deckId";
+	public static final String DECK_NAME_EXTRAS_KEY = "com.fyodorwolf.studyBudy.deckName";
+	public static final String CARD_IDS_EXTRAS_KEY = "com.fyodorwolf.studyBudy.cardIds";
 	
     GestureDetector gestureDetector;
 
@@ -90,9 +94,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
-		long deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
-		String deckName =  getIntent().getExtras().getString("com.fyodorwolf.studyBudy.deckName");
-		long[] cardIds =  getIntent().getExtras().getLongArray("com.fyodorwolf.studyBudy.cardIds");
+		long deckId =  getIntent().getExtras().getLong(DECK_ID_EXTRAS_KEY);
+		String deckName =  getIntent().getExtras().getString(DECK_NAME_EXTRAS_KEY);
+		long[] cardIds =  getIntent().getExtras().getLongArray(CARD_IDS_EXTRAS_KEY);
 		myDeckAdapter = new DeckAdapter(new Deck(deckId,deckName));
 		
         setTitle(deckName);
@@ -264,8 +268,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
             	createCardIntent.setFlags(
 						Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
                         Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            	createCardIntent.putExtra("com.fyodorwolf.studyBudy.deckId", myDeckAdapter.getDeckId());
-				createCardIntent.putExtra("com.fyodorwolf.studyBudy.deckName",  myDeckAdapter.getDeckName());
+            	createCardIntent.putExtra(DECK_ID_EXTRAS_KEY, myDeckAdapter.getDeckId());
+				createCardIntent.putExtra(DECK_NAME_EXTRAS_KEY,  myDeckAdapter.getDeckName());
 				startActivity(createCardIntent);
             	break;
             case R.id.card_menu_shuffle:
@@ -307,6 +311,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
             	break;
             case R.id.card_menu_view_all:
             	changeToAllStack();
+            	break;
+            case R.id.card_menu_reset:
+            	resetDeck().show();
             	break;
             case MotionEvent.ACTION_CANCEL:
                 break;
@@ -451,6 +458,10 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		}
     }
     
+    /**
+     * @param cards
+     * This method is used to set up the deck of cards from a cursor it receives;
+     */
     private void buildDeck(Cursor cards){
     	Cursor result = cards;
     	myDeckAdapter.clear();
@@ -552,6 +563,41 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	}
 	}
 
+    /**
+     * 
+     * @return AlertDialog confirming the reset status of the entire deck of cards
+     */
+	private AlertDialog resetDeck() {
+    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
+           //set message, title, and icon
+           .setTitle("Delete Card") 
+           .setMessage("Are you sure you want to reset the answer status of all the cards in this deck?") 
+           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int whichButton) { 
+                   	dialog.dismiss();
+                   	QueryRunner resetAllCards = new QueryRunner(myDB);
+                	resetAllCards.setQueryRunnerListener(new QueryRunnerListener(){
+                		@Override public void onPostExcecute(Cursor cursor) {
+                			changeToAllStack();
+                		}
+                	});
+                	resetAllCards.execute(DatabaseAdapter.getResetAllCardsInDeckStatusQuery(myDeckAdapter.getDeckId()));
+               } 
+           })
+           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int which) {
+                   dialog.dismiss();
+               }
+           })
+           .create();
+       return myDeleteConfirmationBox;
+	}
+
+
+    /**
+     * This method deletes the current deck's card that is being viewed.
+     * @return AlertDialog confirming the deletion of a specific card
+     */
 	private AlertDialog deleteCard() {
     	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
            //set message, title, and icon

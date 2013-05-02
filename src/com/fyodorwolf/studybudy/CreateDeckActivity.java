@@ -50,15 +50,15 @@ public class CreateDeckActivity extends Activity{
 		
 		groupNameRow.setVisibility(View.GONE);
 		
-		long[] sectionIds = getIntent().getExtras().getLongArray("com.fyodorwolf.studyBudy.sectionIds");
-		CharSequence[] sectionNames = getIntent().getExtras().getCharSequenceArray("com.fyodorwolf.studyBudy.sectionNames");
+		long[] sectionIds = getIntent().getExtras().getLongArray(MainActivity.SECTION_IDS_EXTRAS_KEY);
+		CharSequence[] sectionNames = getIntent().getExtras().getCharSequenceArray(MainActivity.SECTION_NAMES_EXTRAS_KEY);
 		for(int idx = 0; idx<sectionIds.length; idx++){
 			long sectionId = sectionIds[idx];
 			String sectionName = (String) sectionNames[idx];
 			Section section = new Section(sectionId, sectionName);
 			sections.add(section);
 		}
-		sections.add(new Section(NEW_SECTION_ID, "Create New Seciton"));
+		sections.add(new Section(NEW_SECTION_ID, "Create New Section"));
 		
 		groupSelect.setAdapter(new SpinnerAdapter(){
 			@Override public int getCount() {return sections.size();}
@@ -68,6 +68,7 @@ public class CreateDeckActivity extends Activity{
 			@Override public View getView(int position, View convertView, ViewGroup parent) {
 				TextView text = new TextView(getApplicationContext());
 		        text.setTextColor(Color.BLACK);
+		        text.setPadding(7, 7, 7, 7);
 		        text.setText(sections.get(position).name);
 		        return text;
 			}

@@ -27,7 +27,14 @@ import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
- 
+/**
+ * This Activity bridges the gap that doesn't allow
+ * Android intents to request for more than a single
+ * image URI from the user's gallery at a time. 
+ * 
+ * @author fwolf
+ *
+ */
 public class MultiPhotoSelectActivity extends Activity {
  
     private ArrayList<String> imageUrls;

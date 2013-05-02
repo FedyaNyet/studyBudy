@@ -6,7 +6,14 @@ import java.util.HashMap;
 import com.fyodorwolf.studybudy.models.Card;
 import com.fyodorwolf.studybudy.models.Deck;
 
-
+/**
+ * This class extends the basic functionality the deck model to 
+ * allow keep track of the status of the cards it holds, in addition
+ * to which cards are currently being displayed and practiced. 
+ * 
+ * @author fwolf
+ *
+ */
 public class DeckAdapter{
 	
 	public static final int STACK_NOT_ANSWERED = Card.STATUS_NONE;
@@ -87,6 +94,9 @@ public class DeckAdapter{
 		workingStack.cards.clear();
 		workingStackCardIdToIndexMap.clear();
 		stackIndex = 0;
+		for(int idx=0; idx<stackCounts.length;idx++){
+			stackCounts[idx] = 0;
+		}
 	}
 	
 	public void addCard(Card card){

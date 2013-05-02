@@ -30,9 +30,11 @@
     <string name="question_label">Question:</string>
     <string name="create_card">Create Card</string>
     <string name="create_deck">Create Deck</string>
+    <string name="card_menu_reset">Reset Answer Status</string>
     <string name="answer_label">Answer:</string>
     <string name="deck_label">Deck:</string>
     <string name="subject_label">Subject:</string>
+    <string name="subject_name_label">Title:</string>
     <string name="main_menu_delete">Delete Selected</string>
     <string name="main_menu_cancel_edit">Cancel Editing</string>
     <string name="add_images">Add Images</string>

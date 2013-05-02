@@ -13,6 +13,19 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+/**
+ * This class is designed to provide a singleton class
+ * to serve up as the connection to the database for the
+ * application. it also houses static methods that return
+ * the string that can then be run by the QueryRunner class.
+ * 
+ *** EXAMPLE USAGE ****
+ * QueryRunner myQuery = new QueryRunner(DatabaseAdapter.getInstance());
+ * myQuery.execute(DatabaseAdapter.getLastCardIdQuery());
+ * 
+ * @author fwolf
+ *
+ */
 public class DatabaseAdapter
 {
 	public final static boolean WIPE_DATABASE = false;
@@ -147,6 +160,10 @@ public class DatabaseAdapter
 	
 	public static String getLastSectionIdQuery() {
 		return "SELECT MAX(_id) FROM Section";
+	}
+	
+	public static String getResetAllCardsInDeckStatusQuery(long deckId){
+		return "UPDATE Card set status = 0 WHERE deckId = "+deckId;
 	}
 	
 	public static String getCreateDeckQuery(String deckName, long sectionId) {

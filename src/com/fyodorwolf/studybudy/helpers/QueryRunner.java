@@ -3,11 +3,25 @@ package com.fyodorwolf.studybudy.helpers;
 import android.database.Cursor;
 import android.os.AsyncTask;
 
+/**
+ * This class is designed as a means for running queries on an
+ * alternate thread in order to not block any running processes.
+ * 
+ *** EXAMPLE USAGE ****
+ * QueryRunner myGetCardIdQuery = new QueryRunner(DatabaseAdapter.getInstance());
+ * myGetCardIdQuery.setQueryRunnerListener(new QueryRunnerListener(){
+ * 		@Override onPostExcecute(Cursor id){
+ * 			cardId = id.getLong(0);
+ * 			...
+ * 		}
+ * });
+ * myGetCardIdQuery.execute(DatabaseAdapter.getLastCardIdQuery());
+ * 
+ * @author fwolf
+ *
+ */
 	public class QueryRunner extends AsyncTask<String,Integer,Cursor>{
 
-		/**
-	 * 
-	 */
 	private DatabaseAdapter _myAdapter;
 	private QueryRunnerListener _myListener;
 	/**
