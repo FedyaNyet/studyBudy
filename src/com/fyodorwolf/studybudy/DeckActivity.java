@@ -147,15 +147,17 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				return super.onSingleTapConfirmed(e);
 			}
 			@Override public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-	            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
-	           	 	if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-	           	 		nextCard(); // down swipe
-		            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-		            	previousCard();// up swipe
+				if(e1 != null && e2 != null){
+		            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
+		           	 	if(e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+		           	 		nextCard(); // down swipe
+			            } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+			            	previousCard();// up swipe
+			            }
+		            }else{
+		    			flipCard(); //left or right swipe
 		            }
-	            }else{
-	    			flipCard(); //left or right swipe
-	            }
+				}
 				return super.onFling(e1, e2, velocityX, velocityY);
 			}
         });
@@ -362,6 +364,8 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 			((TextView) cardFront.findViewById(R.id.question_text)).setText(newQuestion);
 			((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(newStatus);
 			((TextView) cardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
+			setGalleryForTableRow(cardFront.findViewById(R.id.card_front_gallery_row),myCard);
+			
 
 			Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.animator.slide_out_up);
 			anim.setDuration(ANIMATION_DURATION);
@@ -452,6 +456,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	myDeckAdapter.clear();
 		if(result.getCount()>0){
 	    	result.moveToPosition(-1);
+			Log.d(TAG,"cardId	   photoId		photoFileName");
 			while(result.moveToNext()){
 				long cardId = result.getLong(0);
 				String cardQuestion = result.getString(1);
@@ -464,16 +469,16 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 					myCard = new Card(cardId,cardQuestion,cardAnswer,cardStatus,cardPosition);
 					myDeckAdapter.addCard(myCard);
 				}
-				Log.d(TAG, "val:"+Integer.toString(result.getInt(5)));
 				if(result.getInt(5) != 0){
 					Integer photoId = result.getInt(5);
 					String photoFileName = result.getString(6);
 					Integer photoOrderNum = result.getInt(7);
 					Photo newPhoto = new Photo(photoId,photoFileName,photoOrderNum);
 					myCard.photos.add(newPhoto);
+					Log.d(TAG, Long.toString(cardId)+"	"+Long.toString(photoId)+"	"+photoFileName);
 				}
 			}
-	    	setViewForCard(myDeckAdapter.getCurrentCard());
+			setViewForCard(myDeckAdapter.getCurrentCard());
 	    	
 			if (!showingCardFront){
 				flipCard();
@@ -489,7 +494,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     }//E: gotCards
 	
     private void setViewForCard(Card card){
-    	
+
 		/*make sure the order is correct to produce the stack effect...*/
 		cardFront.bringToFront();
 		cardBack.bringToFront();
@@ -498,9 +503,11 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     	((ImageView) animatedCardFront.findViewById(R.id.card_status)).setImageResource(card.getResourceStatusImage());
     	((TextView) animatedCardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
 		((TextView) animatedCardFront.findViewById(R.id.question_text)).setText(card.question);
+		
 		((ImageView) cardFront.findViewById(R.id.card_status)).setImageResource(card.getResourceStatusImage());
 		((TextView) cardFront.findViewById(R.id.card_id)).setText(myDeckAdapter.getCardPositionString());
 		((TextView) cardFront.findViewById(R.id.question_text)).setText(card.question);
+		
 		((TextView) cardBack.findViewById(R.id.answer_text)).setText(card.answer);
 
 		
@@ -510,32 +517,33 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		actionsView.setVisibility(View.VISIBLE);
 		
 		//Handle photo gallery 
-		View tableRow = this.findViewById(R.id.card_front_gallery_row);
-		tableRow.setVisibility(View.GONE);
+		View tableRow = cardFront.findViewById(R.id.card_front_gallery_row);
+		setGalleryForTableRow(tableRow, card);
+		
+    }
+    
+    private void setGalleryForTableRow(View tableRow,Card card) {
+    	tableRow.setVisibility(View.GONE);
     	if(card.photos.size()>0){
-    		Log.d(TAG,Integer.toString(card.photos.size()));
+
+    		Log.d(TAG,"-------------------------------------------------------");
+    		for(Card mCard : myDeckAdapter.getAllDeck().cards){
+				for(Photo photo: mCard.photos){
+					Log.d(TAG, Long.toString(mCard.id)+"	"+Long.toString(photo.id)+"	"+photo.filename);
+				}
+			}
     		tableRow.setVisibility(View.VISIBLE);
     		final ArrayList<Photo> galleryItems = card.photos;
     		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
-    		gallery.setOnItemClickListener(new OnItemClickListener(){
-    			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    				Photo myPhoto = galleryItems.get(position);
-    				Intent intent = new Intent();
-    				intent.setAction(android.content.Intent.ACTION_VIEW); 
-    				Log.d(TAG,myPhoto.filename);
-    				intent.setDataAndType(Uri.parse("file://"+myPhoto.filename),"image/*");
-    				startActivity(intent);
-    			}
-    		});
     		gallery.setAdapter(new BaseAdapter(){
     			@Override public int getCount() { return galleryItems.size();}
     			@Override public Object getItem(int position) {return galleryItems.get(position);}
-    			@Override public long getItemId(int position) {return galleryItems.get(position)._id;}
+    			@Override public long getItemId(int position) {return galleryItems.get(position).id;}
     			@Override public View getView(int position, View convertView, ViewGroup parent) {
     				final Photo myPhoto = galleryItems.get(position);
     				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.galley_photo_item,null);
     				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-    				myImage.setTag("file://"+myPhoto.filename);
+    				Log.d(TAG,"---"+Integer.toString(position)+"	"+Long.toString(myPhoto.id)+"	"+myPhoto.filename);
     				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){
     					@Override public void onLoadingStarted(String imageUri, View view) {}
     					@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {}
@@ -548,11 +556,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     			}
     		});
     	}
-		
-		
-    }
-    
-    private AlertDialog deleteCard() {
+	}
+
+	private AlertDialog deleteCard() {
     	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
            //set message, title, and icon
            .setTitle("Delete Card") 

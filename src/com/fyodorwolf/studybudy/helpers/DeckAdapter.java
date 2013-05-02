@@ -125,6 +125,10 @@ public class DeckAdapter{
 		}
 		return null;
 	}
+	
+	public Deck getAllDeck(){
+		return allStack;
+	}
 
 	public String getCardPositionString(){
 		return Integer.toString(stackIndex+1)+"/"+Integer.toString(getWorkingStackSize());

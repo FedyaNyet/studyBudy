@@ -146,7 +146,7 @@ public class DatabaseAdapter
 	}
 	
 	public static String getLastSectionIdQuery() {
-		return "SELECT MAX(_id) FROM Section where";
+		return "SELECT MAX(_id) FROM Section";
 	}
 	
 	public static String getCreateDeckQuery(String deckName, long sectionId) {

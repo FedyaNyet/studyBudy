@@ -175,12 +175,11 @@ public class CreateCardActivity extends Activity {
 		gallery.setAdapter(new BaseAdapter(){
 			@Override public int getCount() { return galleryItems.size();}
 			@Override public Object getItem(int position) {return galleryItems.get(position);}
-			@Override public long getItemId(int position) {return galleryItems.get(position)._id;}
+			@Override public long getItemId(int position) {return galleryItems.get(position).id;}
 			@Override public View getView(int position, View convertView, ViewGroup parent) {
 				final Photo myPhoto = galleryItems.get(position);
 				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.galley_photo_item,null);
 				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-				myImage.setTag("file://"+myPhoto.filename);
 				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){
 					@Override public void onLoadingStarted(String imageUri, View view) {}
 					@Override public void onLoadingCancelled(String imageUri, View view) {}
