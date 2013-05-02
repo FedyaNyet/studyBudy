@@ -114,7 +114,7 @@ public class DatabaseAdapter
     		ids += Long.toString(cardId)+","; 
     	}
     	ids = ids.substring(0,ids.length()-1);
-		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WERE _id IN ("+ids+")";
+		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WHERE c._id IN ("+ids+")";
 	}
 	
 	public static String getCardsWithDeckIdQuery(long DeckId){
