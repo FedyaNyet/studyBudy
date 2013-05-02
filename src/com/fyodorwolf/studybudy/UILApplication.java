@@ -1,6 +1,7 @@
 package com.fyodorwolf.studybudy;
 
 import android.app.Application;
+
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;

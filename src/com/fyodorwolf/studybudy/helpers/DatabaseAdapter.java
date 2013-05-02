@@ -15,7 +15,7 @@ import android.util.Log;
 
 public class DatabaseAdapter
 {
-	public final static boolean WIPE_DATABASE = true;
+	public final static boolean WIPE_DATABASE = false;
 	
 	protected static final String TAG = "DataAdapter";
     
@@ -114,11 +114,11 @@ public class DatabaseAdapter
     		ids += Long.toString(cardId)+","; 
     	}
     	ids = ids.substring(0,ids.length()-1);
-		return "SELECT _id, question, answer, status, numberInDeck FROM Card JOIN WERE _id IN ("+ids+")";
+		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c JOIN Photo p on p.cardId = c._id WERE _id IN ("+ids+")";
 	}
 	
 	public static String getCardsWithDeckIdQuery(long DeckId){
-		return "SELECT _id, question, answer, status, numberInDeck FROM Card where deckId = "+DeckId;
+		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c JOIN Photo p on p.cardId = c._id WHERE deckId = "+DeckId;
 	}
 	
 	public static String getCardsWithDeckIdAndStatusQuery(long DeckId, int status){
@@ -153,11 +153,11 @@ public class DatabaseAdapter
 		return "INSERT INTO Deck (name,sectionId) values (\""+deckName+"\","+sectionId+")";
 	}
 	
-	public static String getCreatePhotoQuery(String[] imagePaths, long cardId) {
+	public static String getCreatePhotoForLatestCardQuery(String[] imagePaths) {
 		String values= "";
 		int orderNum = 0;
 		for(String path: imagePaths){
-			values += "(\""+path+"\","+cardId+","+orderNum+"),";
+			values += "(\""+path+"\",(SELECT MAX(_id) from Card),"+orderNum+"),";
 			orderNum++;
 		}
 		values = values.substring(0,values.length()-1);

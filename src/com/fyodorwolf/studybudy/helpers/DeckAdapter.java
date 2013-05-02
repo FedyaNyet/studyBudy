@@ -1,6 +1,5 @@
 package com.fyodorwolf.studybudy.helpers;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
@@ -16,21 +15,23 @@ public class DeckAdapter{
 	public static final int STACK_ALL = 3;
 	
 	public int currentStack;
+	private HashMap<Long,Integer> workingStackCardIdToIndexMap;
 	private Deck workingStack;
+	
+	private HashMap<Long,Integer> allStackCardIdToIndexMap;
+	private Deck allStack;
 	
 	public int[] stackCounts = {0,0,0,0};
 	public int stackIndex;
-
-	private HashMap<Long,Card> cardMap;
-	private ArrayList<Card> allCards;
 	
 	
 	public DeckAdapter(Deck myDeck) {
 		currentStack = STACK_ALL;
-		workingStack = myDeck;
+		workingStackCardIdToIndexMap = new HashMap<Long,Integer>();
+		workingStack = new Deck(myDeck.id, myDeck.name);
 		stackIndex = 0;
-		cardMap = new HashMap<Long,Card>();
-		allCards = new ArrayList<Card>();
+		allStackCardIdToIndexMap = new HashMap<Long,Integer>();
+		allStack = myDeck;
 	}
 	
 	public int getDeckCount() {
@@ -38,7 +39,7 @@ public class DeckAdapter{
 	}
 
 	public int getTotalCardCount(){
-		return allCards.size();
+		return allStack.cards.size();
 	}
 	
 	public void nowShowingAll() {
@@ -86,10 +87,12 @@ public class DeckAdapter{
 	}
 	
 	public void addCard(Card card){
-		workingStack.cards.add(card);
-		if(cardMap.get(card.id) == null){
-			cardMap.put(card.id, card);
-			allCards.add(card);
+		if(allStackCardIdToIndexMap.get(card.id) == null){
+			//add new card
+			allStackCardIdToIndexMap.put(card.id,allStack.cards.size());
+			allStack.cards.add(card);
+			workingStackCardIdToIndexMap.put(card.id,workingStack.cards.size());
+			workingStack.cards.add(card);
 			stackCounts[card.status]++;
 			stackCounts[STACK_ALL]++;
 		}
@@ -116,7 +119,11 @@ public class DeckAdapter{
 	}
 	
 	public Card getCardWithId(long _id){
-		return cardMap.get(_id);
+		Integer idx = allStackCardIdToIndexMap.get(_id);
+		if(idx != null){
+			return allStack.cards.get(idx);
+		}
+		return null;
 	}
 
 	public String getCardPositionString(){

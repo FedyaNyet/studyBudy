@@ -28,7 +28,7 @@
     <string name="card_id">0</string>
     <string name="card_status">Current card status</string>
     <string name="question_label">Question:</string>
-    <string name="create_card">Create Create</string>
+    <string name="create_card">Create Card</string>
     <string name="create_deck">Create Deck</string>
     <string name="answer_label">Answer:</string>
     <string name="deck_label">Deck:</string>

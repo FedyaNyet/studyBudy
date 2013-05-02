@@ -1,6 +1,8 @@
 package com.fyodorwolf.studybudy;
 
 import java.io.File;
+import java.util.ArrayList;
+
 
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.fyodorwolf.studybudy.helpers.DeckAdapter;
@@ -9,32 +11,44 @@ import com.fyodorwolf.studybudy.helpers.ViewFlipper;
 import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.helpers.ViewFlipper.ViewSwapperListener;
 import com.fyodorwolf.studybudy.models.*;
+import com.fyodorwolf.studybudy.ui.HorizontalListView;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DataSetObserver;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ImageView.ScaleType;
 import android.support.v4.view.ViewPager;
 
@@ -118,11 +132,11 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				buildDeck(cards);
 			}
         });
-    	String queryString = DatabaseAdapter.getCardsWithDeckIdQuery(deckId);
+    	String getCardQuery = DatabaseAdapter.getCardsWithDeckIdQuery(deckId);
     	if(cardIds != null){
-    		queryString = DatabaseAdapter.getCardsWithIdsQuery(cardIds);
+    		getCardQuery = DatabaseAdapter.getCardsWithIdsQuery(cardIds);
     	}
-    	query.execute(queryString);
+    	query.execute(getCardQuery);
 
 		/* DEFINE GESTURES */
         gestureDetector = new GestureDetector(this, new SimpleOnGestureListener(){
@@ -439,13 +453,22 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		if(result.getCount()>0){
 	    	result.moveToPosition(-1);
 			while(result.moveToNext()){
-				long id = result.getLong(0);
-				String question = result.getString(1);
-				String answer = result.getString(2);
-				Integer status = result.getInt(3);
-				Integer position = result.getInt(4);
-				Card newCard = new Card(id,question,answer,status,position);
-				myDeckAdapter.addCard(newCard);
+				long cardId = result.getLong(0);
+				String cardQuestion = result.getString(1);
+				String cardAnswer = result.getString(2);
+				Integer cardStatus = result.getInt(3);
+				Integer cardPosition = result.getInt(4);
+				
+				Card myCard = myDeckAdapter.getCardWithId(cardId);
+				if(myCard == null){
+					myCard = new Card(cardId,cardQuestion,cardAnswer,cardStatus,cardPosition);
+					myDeckAdapter.addCard(myCard);
+				}
+				Integer photoId = result.getInt(5);
+				String photoFileName = result.getString(6);
+				Integer photoOrderNum = result.getInt(7);
+				Photo newPhoto = new Photo(photoId,photoFileName,photoOrderNum);
+				myCard.photos.add(newPhoto);
 			}
 	    	setViewForCard(myDeckAdapter.getCurrentCard());
 	    	
@@ -464,42 +487,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 	
     private void setViewForCard(Card card){
     	
-    	QueryRunner getPhotos = new QueryRunner(DatabaseAdapter.getInstance());
-    	getPhotos.setQueryRunnerListener(new QueryRunnerListener(){
-			@Override public void onPostExcecute(Cursor cursor) {
-				View tableRow = DeckActivity.this.findViewById(R.id.card_front_row);
-				tableRow.setVisibility(View.VISIBLE);
-				LinearLayout gallary =  (LinearLayout) tableRow.findViewById(R.id.card_front_gallary);
-				gallary.removeAllViews();
-				cursor.moveToPosition(-1);
-				while(cursor.moveToNext()){
-					long photoId = cursor.getLong(0);
-					String filename = cursor.getString(1);
-					Log.d(TAG,"filename:"+filename);
-					int position = cursor.getInt(2);
-					final File imageFile = new File(filename);
-					View imageLayout =  getLayoutInflater().inflate(R.layout.row_multiphoto_item, null);
-					imageLayout.findViewById(R.id.checkBox1).setVisibility(View.GONE);
-					ImageView myImage;
-					myImage = (ImageView)imageLayout.findViewById(R.id.imageView1);
-					myImage.setScaleType(ScaleType.FIT_END);
-					myImage.setVisibility(View.VISIBLE);
-					myImage.setOnClickListener(new OnClickListener(){
-						@Override public void onClick(View imageView) {
-							Intent intent = new Intent();
-							intent.setAction(android.content.Intent.ACTION_VIEW); 
-							intent.setDataAndType(Uri.fromFile(imageFile),"image/*");
-							startActivity(intent);
-						}
-					});
-					String path = Uri.fromFile(imageFile).toString();
-					ImageLoader.getInstance().displayImage(path, myImage);
-					gallary.addView(imageLayout);
-				}
-			}
-		});
-    	getPhotos.execute(DatabaseAdapter.getPhotosWithCardIdQuery(card.id));
-    	
 		/*make sure the order is correct to produce the stack effect...*/
 		cardFront.bringToFront();
 		cardBack.bringToFront();
@@ -513,12 +500,50 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		((TextView) cardFront.findViewById(R.id.question_text)).setText(card.question);
 		((TextView) cardBack.findViewById(R.id.answer_text)).setText(card.answer);
 
+		
 		//common callback
 		cardFront.setVisibility(View.VISIBLE);
 		cardBack.setVisibility(View.GONE);
 		actionsView.setVisibility(View.VISIBLE);
-
 		
+		//Handle photo gallery 
+		View tableRow = this.findViewById(R.id.card_front_gallery_row);
+		tableRow.setVisibility(View.GONE);
+    	if(card.photos.size()>0){
+    		tableRow.setVisibility(View.VISIBLE);
+    		final ArrayList<Photo> galleryItems = card.photos;
+    		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
+    		gallery.setOnItemClickListener(new OnItemClickListener(){
+    			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    				Photo myPhoto = galleryItems.get(position);
+    				Intent intent = new Intent();
+    				intent.setAction(android.content.Intent.ACTION_VIEW); 
+    				Log.d(TAG,myPhoto.filename);
+    				intent.setDataAndType(Uri.parse("file://"+myPhoto.filename),"image/*");
+    				startActivity(intent);
+    			}
+    		});
+    		gallery.setAdapter(new BaseAdapter(){
+    			@Override public int getCount() { return galleryItems.size();}
+    			@Override public Object getItem(int position) {return galleryItems.get(position);}
+    			@Override public long getItemId(int position) {return galleryItems.get(position)._id;}
+    			@Override public View getView(int position, View convertView, ViewGroup parent) {
+    				final Photo myPhoto = galleryItems.get(position);
+    				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.galley_photo_item,null);
+    				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
+    				myImage.setTag("file://"+myPhoto.filename);
+    				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){
+    					@Override public void onLoadingStarted(String imageUri, View view) {}
+    					@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {}
+    					@Override public void onLoadingCancelled(String imageUri, View view) {}
+    					@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+    						((ImageView)view).setImageBitmap(loadedImage);
+    					}
+    				});
+    				return myImage;
+    			}
+    		});
+    	}
 		
 		
     }

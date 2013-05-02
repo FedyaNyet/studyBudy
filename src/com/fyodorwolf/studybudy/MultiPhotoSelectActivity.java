@@ -75,12 +75,7 @@ public class MultiPhotoSelectActivity extends Activity {
         });
         
     }
- 
-    @Override protected void onStop() {
-        imageLoader.stop();
-        super.onStop();
-    }
- 
+    
     public class ImageAdapter extends BaseAdapter {
  
         ArrayList<String> mList;
