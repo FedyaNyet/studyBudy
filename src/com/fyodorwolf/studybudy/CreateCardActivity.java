@@ -57,6 +57,7 @@ public class CreateCardActivity extends Activity {
 		setContentView(R.layout.create_card);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 		thisActivity = this;
+		
 		deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
 		deckName =  getIntent().getExtras().getString("com.fyodorwolf.studyBudy.deckName");
 		setTitle("Add New Card to "+deckName);
@@ -68,7 +69,6 @@ public class CreateCardActivity extends Activity {
 		final TextView answer = (TextView) this.findViewById(R.id.answer_input);
 		findViewById(R.id.create_card).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v){
-				Log.d(TAG, "here");
 				String question_text = question.getText().toString();
 				String answer_text = answer.getText().toString();
 				if(question_text.length()>0 && answer_text.length()>0){

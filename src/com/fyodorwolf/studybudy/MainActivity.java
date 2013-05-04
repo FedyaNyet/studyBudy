@@ -24,35 +24,32 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ListView;
-import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
 public class MainActivity extends ExpandableListActivity{
 
-	
-	EditText searchBox;
-	ExpandableListView listView;
-	private DatabaseAdapter myDB;
-	private static final String TAG = "MainActivity";
-	private boolean editing = false;
-	ExpandableListAdapter myListViewAdapter;
-	
-	ArrayList<Section> _myExpListData = new ArrayList<Section>();
-	HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
-	protected boolean searching = false;
+	public static final String TAG = "MainActivity";
 
-    public static String SECTION_NAMES_EXTRAS_KEY = "com.fyodorwolf.studyBudy.sectionNames";
-    public static String SECTION_IDS_EXTRAS_KEY = "com.fyodorwolf.studyBudy.sectionIds"; 
+	private boolean editing = false;
+	private boolean deleting = false;
+	private boolean searching = false;
+	private EditText searchBox;
+	private DatabaseAdapter myDB;
+	private ExpandableListView listView;
 	
+	private ArrayList<Section> _sections = new ArrayList<Section>();
+	private HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
+	private ExpandableListAdapter _listViewAdapter;
     		
     @Override protected void onCreate(Bundle savedInstanceState) {
         // define main views.
@@ -101,20 +98,21 @@ public class MainActivity extends ExpandableListActivity{
     	});
     	
 		listView.setOnChildClickListener(new OnChildClickListener(){
-
-			@Override
-			public boolean onChildClick(ExpandableListView parent, View child, int groupIdx, int childIdx, long deckId) {
+			@Override public boolean onChildClick(ExpandableListView parent, View child, int groupIdx, int childIdx, long deckId) {
 				if(editing){
+	            	runCreateDeckActivity(deckId);
+				}
+				else if(deleting){
 					int position = parent.getPositionForView(child);
 					boolean curCheckState = ((CheckedTextView)child).isChecked();
 					listView.setItemChecked(position, !curCheckState);
 				}else{
 					Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
 					deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
-	                            Intent.FLAG_ACTIVITY_NO_ANIMATION);
+	                            		Intent.FLAG_ACTIVITY_NO_ANIMATION);
 					deckIntent.putExtra(DeckActivity.DECK_ID_EXTRAS_KEY, deckId);
 					deckIntent.putExtra(DeckActivity.DECK_NAME_EXTRAS_KEY, ((TextView)child.findViewById(android.R.id.text1)).getText());
-					Deck clickedDeck = _myExpListData.get(groupIdx).getDeckById(deckId);
+					Deck clickedDeck = _sections.get(groupIdx).getDeckById(deckId);
 					if(searching && clickedDeck.cards.size()>0){
 						//build an array of card id's to show in the next activity...
 						long[] cardIds = new long[clickedDeck.cards.size()];
@@ -152,10 +150,18 @@ public class MainActivity extends ExpandableListActivity{
 
     @Override public boolean onPrepareOptionsMenu(Menu menu){
     	if(editing){
+    		menu.findItem(R.id.main_menu_edit_deck).setVisible(false);
+    		menu.findItem(R.id.main_menu_edit_list).setVisible(false);
+    		menu.findItem(R.id.main_menu_delete).setVisible(false);
+    		menu.findItem(R.id.main_menu_cancel_edit).setVisible(true);
+    	}
+    	else if(deleting){
+    		menu.findItem(R.id.main_menu_edit_deck).setVisible(false);
     		menu.findItem(R.id.main_menu_edit_list).setVisible(false);
     		menu.findItem(R.id.main_menu_delete).setVisible(true);
     		menu.findItem(R.id.main_menu_cancel_edit).setVisible(true);
     	}else{
+    		menu.findItem(R.id.main_menu_edit_deck).setVisible(true);
     		menu.findItem(R.id.main_menu_edit_list).setVisible(true);
     		menu.findItem(R.id.main_menu_delete).setVisible(false);
     		menu.findItem(R.id.main_menu_cancel_edit).setVisible(false);
@@ -167,24 +173,16 @@ public class MainActivity extends ExpandableListActivity{
         super.onOptionsItemSelected(item);
         switch (item.getItemId()) {
             case R.id.main_menu_new_deck:
-            	Intent createDeckIntent = new Intent(MainActivity.this,CreateDeckActivity.class);
-            	createDeckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            	String[] sectionNames = new String[_myExpListData.size()];
-            	long[] sectionIds = new long[_myExpListData.size()];
-            	for(int idx = 0; idx < _myExpListData.size(); idx++){
-            		sectionNames[idx] = _myExpListData.get(idx).name;
-            		sectionIds[idx] = _myExpListData.get(idx).id;
-            	}
-            	createDeckIntent.putExtra(SECTION_NAMES_EXTRAS_KEY, sectionNames);
-            	createDeckIntent.putExtra(SECTION_IDS_EXTRAS_KEY, sectionIds);
-            	startActivity(createDeckIntent);
+            	runCreateDeckActivity(0);
+            	break;
+            case R.id.main_menu_edit_deck:
+            	editing = true;
             	break;
             case R.id.main_menu_edit_list:
-            	editing = true;
+            	deleting = true;
             	listView.setChoiceMode(ExpandableListView.CHOICE_MODE_MULTIPLE);
                 listView.setItemsCanFocus(false);
-                listView.setAdapter(myListViewAdapter);
+                listView.setAdapter(_listViewAdapter);
                 expandListView();
                 break;
             case R.id.main_menu_delete:
@@ -201,21 +199,42 @@ public class MainActivity extends ExpandableListActivity{
     	return true;
     }
     
-    @Override public void onStart(){
+    private void runCreateDeckActivity(long deckId) {
+    	Intent createDeckIntent = new Intent(MainActivity.this,CreateDeckActivity.class);
+    	createDeckIntent.setFlags(
+			Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+            Intent.FLAG_ACTIVITY_NO_ANIMATION
+        );
+    	String[] sectionNames = new String[_sections.size()];
+    	long[] sectionIds = new long[_sections.size()];
+    	for(int idx = 0; idx < _sections.size(); idx++){
+    		sectionNames[idx] = _sections.get(idx).name;
+    		sectionIds[idx] = _sections.get(idx).id;
+    	}
+    	createDeckIntent.putExtra(CreateDeckActivity.EXTRAS_SECTION_IDS, sectionIds);
+    	createDeckIntent.putExtra(CreateDeckActivity.EXTRAS_SECTION_NAMES, sectionNames);
+    	if(deckId > 0){
+    		createDeckIntent.putExtra(CreateDeckActivity.EXTRAS_EDITING_DECK_ID, deckId);
+    	}
+    	startActivity(createDeckIntent);
+	}
+
+	@Override public void onStart(){
     	listView.requestFocus();
         super.onStart();
     }
     
     private void doneEditing(){
+    	deleting = false;
     	editing = false;
         this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         this.listView.setItemsCanFocus(true);
-        listView.setAdapter(myListViewAdapter);
+        listView.setAdapter(_listViewAdapter);
         expandListView();
     }
 
     protected void gotSections(Cursor result) {
-    	_myExpListData = new ArrayList<Section>();
+    	_sections = new ArrayList<Section>();
     	_sectionIdMap = new HashMap<Long,Section>();
     	
 		if(result.getCount()>0){
@@ -230,7 +249,7 @@ public class MainActivity extends ExpandableListActivity{
 				if(section == null){
 					section = new Section(sectionId, sectionName);
 					_sectionIdMap.put(sectionId, section);
-					_myExpListData.add(section);
+					_sections.add(section);
 				}
 				Deck myDeck = new Deck(deckId,deckName);
 				section.addDeck(myDeck);//addDeck won't allow repeats..
@@ -243,30 +262,32 @@ public class MainActivity extends ExpandableListActivity{
 			}
 		}
 		
-		myListViewAdapter = new ExpandableListAdapter(){
-			@Override public Object getGroup(int groupPosition) {return _myExpListData.get(groupPosition);	}
-			@Override public Object getChild(int groupPosition, int childPosition) {return _myExpListData.get(groupPosition).decks.get(childPosition);}
-			@Override public int getChildrenCount(int groupPosition) {	return _myExpListData.get(groupPosition).decks.size();}
-			@Override public int getGroupCount() { return _myExpListData.size();}
-			@Override public long getChildId(int groupPosition, int childPosition) {return _myExpListData.get(groupPosition).decks.get(childPosition).id;}
-			@Override public long getGroupId(int groupPosition) { return _myExpListData.get(groupPosition).id;}
+		_listViewAdapter = new ExpandableListAdapter(){
+			@Override public Object getGroup(int groupPosition) {return _sections.get(groupPosition);	}
+			@Override public Object getChild(int groupPosition, int childPosition) {return _sections.get(groupPosition).decks.get(childPosition);}
+			@Override public int getChildrenCount(int groupPosition) {	return _sections.get(groupPosition).decks.size();}
+			@Override public int getGroupCount() { return _sections.size();}
+			@Override public long getChildId(int groupPosition, int childPosition) {return _sections.get(groupPosition).decks.get(childPosition).id;}
+			@Override public long getGroupId(int groupPosition) { return _sections.get(groupPosition).id;}
 			@Override public long getCombinedChildId(long groupId, long childId) {return childId;}
 			@Override public long getCombinedGroupId(long groupId) { return groupId;}
 			@Override public boolean areAllItemsEnabled() { return true; }
 			@Override public boolean hasStableIds() {return true;}
 			@Override public boolean isChildSelectable(int groupPosition, int childPosition) { return true;}
-			@Override public boolean isEmpty() {return _myExpListData.isEmpty();}
+			@Override public boolean isEmpty() {return _sections.isEmpty();}
 			
 			@Override public void onGroupCollapsed(int groupPosition) {}
 			@Override public void onGroupExpanded(int groupPosition) {}
-			@Override public void registerDataSetObserver(DataSetObserver observer) {}
+			@Override public void registerDataSetObserver(DataSetObserver observer) {
+				
+			}
 			@Override public void unregisterDataSetObserver(DataSetObserver observer) {}
 			
 			@Override
 			public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
 				LayoutInflater myInflator = LayoutInflater.from(getApplicationContext());
 				TextView item;
-				if(editing){
+				if(deleting){
 					item = (TextView) myInflator.inflate(android.R.layout.simple_list_item_multiple_choice,null);
 				}else{
 					item = (TextView) myInflator.inflate(android.R.layout.simple_list_item_activated_1, null);
@@ -294,7 +315,7 @@ public class MainActivity extends ExpandableListActivity{
 	}
     
     public void expandListView(){
-		listView.setAdapter(myListViewAdapter);
+		listView.setAdapter(_listViewAdapter);
 		int count = listView.getExpandableListAdapter().getGroupCount();
 		for (int position = 0; position < count; position++)
 		    listView.expandGroup(position);

@@ -184,6 +184,13 @@ public class DatabaseAdapter
 		return "SELECT _id, filename, orderNum FROM Photo where cardId = "+cardId;
 	}
 
+	public static String getDeckQuery(long deckId) {
+		return "SELECT _id, name, sectionId FROM Deck WHERE _id = "+deckId;
+	}
+	
+	public static String getUpdateDeckQuery(long deckId, String deckName, long sectionId) {
+		return "UPDATE Deck SET name=\""+deckName+"\", sectionId="+sectionId+" WHERE _id="+deckId;
+	}
 
 	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
 		String ids = "";
@@ -296,5 +303,5 @@ public class DatabaseAdapter
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
 	}//E: SQLiteHelper
-
+	
 }

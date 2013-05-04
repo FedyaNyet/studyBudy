@@ -1,6 +1,7 @@
 package com.fyodorwolf.studybudy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
 import com.fyodorwolf.studybudy.helpers.QueryRunner;
@@ -19,6 +20,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
@@ -28,12 +30,18 @@ import android.widget.TextView;
 
 public class CreateDeckActivity extends Activity{
 
+	public static final String TAG = "CreateDeckActivity";
+	public static final String EXTRAS_EDITING_DECK_ID = "com.fyodorwolf.studybudy.deckId";
+    public static final String EXTRAS_SECTION_IDS = "com.fyodorwolf.studyBudy.sectionIds"; 
+    public static final String EXTRAS_SECTION_NAMES = "com.fyodorwolf.studyBudy.sectionNames";
+
 	private static final int NEW_SECTION_ID = -1;
-	private static final String TAG = "CreateDeckActivity";
-	private EditText deckInput;
-	private EditText groupInput; 
+	
 	private Spinner groupSelect;
+	private EditText groupInput; 
+	private EditText deckInput;
 	ArrayList<Section> sections = new ArrayList<Section>();
+	HashMap<Long,Integer> sectionIdToIndex = new HashMap<Long,Integer>();
 	DatabaseAdapter myDb;
 	TableRow groupNameRow;
 	
@@ -50,12 +58,13 @@ public class CreateDeckActivity extends Activity{
 		
 		groupNameRow.setVisibility(View.GONE);
 		
-		long[] sectionIds = getIntent().getExtras().getLongArray(MainActivity.SECTION_IDS_EXTRAS_KEY);
-		CharSequence[] sectionNames = getIntent().getExtras().getCharSequenceArray(MainActivity.SECTION_NAMES_EXTRAS_KEY);
+		long[] sectionIds = getIntent().getExtras().getLongArray(EXTRAS_SECTION_IDS);
+		CharSequence[] sectionNames = getIntent().getExtras().getCharSequenceArray(EXTRAS_SECTION_NAMES);
 		for(int idx = 0; idx<sectionIds.length; idx++){
 			long sectionId = sectionIds[idx];
 			String sectionName = (String) sectionNames[idx];
 			Section section = new Section(sectionId, sectionName);
+			sectionIdToIndex.put(section.id, sections.size());
 			sections.add(section);
 		}
 		sections.add(new Section(NEW_SECTION_ID, "Create New Section"));
@@ -91,13 +100,30 @@ public class CreateDeckActivity extends Activity{
 			}
 			@Override public void onNothingSelected(AdapterView<?> parent) {}
 		});
+		
+		final long deckId = getIntent().getLongExtra(EXTRAS_EDITING_DECK_ID, 0);
 
+		if(deckId > 0){
+			setTitle("Edit Deck");
+			((Button)this.findViewById(R.id.create_deck)).setText("Edit Deck");
+			QueryRunner myQuery = new QueryRunner(myDb);
+			myQuery.setQueryRunnerListener(new QueryRunnerListener(){
+				@Override public void onPostExcecute(Cursor cursor) {
+					String deckName = cursor.getString(1);
+					long sectionId = cursor.getLong(2);
+					int position  = sectionIdToIndex.get(sectionId);
+					deckInput.setText(deckName);
+					groupSelect.setSelection(position);
+				}
+			});
+			myQuery.execute(DatabaseAdapter.getDeckQuery(deckId));
+			
+		}
 		this.findViewById(R.id.create_deck).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v){
-				final String deckText = deckInput.getText().toString();
-				boolean lastSectionIsSelected = (groupSelect.getSelectedItemId() == NEW_SECTION_ID);
-				if(deckText.length()>0){
-					if(lastSectionIsSelected){
+				final String deckName = deckInput.getText().toString();
+				if(deckName.length()>0){
+					if(groupSelect.getSelectedItemId() == NEW_SECTION_ID){
 						final String groupName = groupInput.getText().toString();
 						if(groupName.length()>0){
 							QueryRunner createSection = new QueryRunner(myDb);
@@ -108,7 +134,12 @@ public class CreateDeckActivity extends Activity{
 										@Override public void onPostExcecute(Cursor cur) {
 											cur.moveToFirst();
 											long sectionId = cur.getLong(0);
-											createGroupWithNameAndSectionId(deckText, sectionId);
+											if(deckId > 0){
+												String deckName = deckInput.getText().toString();
+												updateDeck(deckId,deckName,sectionId);
+											}else{
+												createGroupWithNameAndSectionId(deckName, sectionId);
+											}
 										}
 									});
 									getSectionId.execute(DatabaseAdapter.getLastSectionIdQuery());
@@ -117,11 +148,13 @@ public class CreateDeckActivity extends Activity{
 							});
 							createSection.execute(DatabaseAdapter.getCreateSectionQuery(groupName));
 						}
-					}else{
+					}else if(deckId > 0){
+						long sectionId = groupSelect.getSelectedItemId();
+						updateDeck(deckId,deckName,sectionId);
+					}else{	
 						int selectedIndex = groupSelect.getSelectedItemPosition();
 						long sectionId = ((SpinnerAdapter)groupSelect.getAdapter()).getItemId(selectedIndex);
-						Log.d(TAG, deckText+","+sectionId);
-						createGroupWithNameAndSectionId(deckText, sectionId);
+						createGroupWithNameAndSectionId(deckName, sectionId);
 					}
 				}
 			}
@@ -129,6 +162,16 @@ public class CreateDeckActivity extends Activity{
         super.onCreate(savedInstanceState);
 	}
 
+	public void updateDeck(long deckId, String deckName, long sectionId){
+		QueryRunner createGroup = new QueryRunner(myDb);
+		createGroup.setQueryRunnerListener(new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cards) {
+				backToParentActivity();
+			}
+		});
+		createGroup.execute(DatabaseAdapter.getUpdateDeckQuery(deckId,deckName,sectionId));
+	}
+	
 	public void createGroupWithNameAndSectionId(String name, long sectionId){
 		QueryRunner createGroup = new QueryRunner(myDb);
 		createGroup.setQueryRunnerListener(new QueryRunnerListener(){

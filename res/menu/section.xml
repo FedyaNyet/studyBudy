@@ -6,6 +6,11 @@
         android:showAsAction="never"
         android:title="@string/main_menu_new_deck"/>
     <item
+        android:id="@+id/main_menu_edit_deck"
+        android:orderInCategory="101"
+        android:showAsAction="never"
+        android:title="@string/main_menu_edit_deck"/>
+    <item
         android:id="@+id/main_menu_edit_list"
         android:orderInCategory="101"
         android:showAsAction="never"
