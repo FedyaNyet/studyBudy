@@ -34,7 +34,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.fyodorwolf.studybudy.CreateCardActivity"
+            android:name="com.fyodorwolf.studybudy.CardFormActivity"
             android:windowSoftInputMode="adjustResize"
             android:label="@string/create_card" >
             <intent-filter>
@@ -43,7 +43,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.fyodorwolf.studybudy.CreateDeckActivity"
+            android:name="com.fyodorwolf.studybudy.DeckFormActivity"
             android:windowSoftInputMode="adjustResize"
             android:label="@string/create_deck" >
             <intent-filter>

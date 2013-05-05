@@ -3,9 +3,10 @@ package com.fyodorwolf.studybudy;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
-import com.fyodorwolf.studybudy.helpers.QueryRunner;
-import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
+import com.fyodorwolf.studybudy.db.DatabaseAdapter;
+import com.fyodorwolf.studybudy.db.QueryRunner;
+import com.fyodorwolf.studybudy.db.QueryString;
+import com.fyodorwolf.studybudy.db.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.models.Section;
 
 import android.app.Activity;
@@ -14,7 +15,6 @@ import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -28,7 +28,7 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.TableRow;
 import android.widget.TextView;
 
-public class CreateDeckActivity extends Activity{
+public class DeckFormActivity extends Activity{
 
 	public static final String TAG = "CreateDeckActivity";
 	public static final String EXTRAS_EDITING_DECK_ID = "com.fyodorwolf.studybudy.deckId";
@@ -116,7 +116,7 @@ public class CreateDeckActivity extends Activity{
 					groupSelect.setSelection(position);
 				}
 			});
-			myQuery.execute(DatabaseAdapter.getDeckQuery(deckId));
+			myQuery.execute(QueryString.getDeckQuery(deckId));
 			
 		}
 		this.findViewById(R.id.create_deck).setOnClickListener(new OnClickListener(){
@@ -142,11 +142,11 @@ public class CreateDeckActivity extends Activity{
 											}
 										}
 									});
-									getSectionId.execute(DatabaseAdapter.getLastSectionIdQuery());
+									getSectionId.execute(QueryString.getLastSectionIdQuery());
 									
 								}
 							});
-							createSection.execute(DatabaseAdapter.getCreateSectionQuery(groupName));
+							createSection.execute(QueryString.getCreateSectionQuery(groupName));
 						}
 					}else if(deckId > 0){
 						long sectionId = groupSelect.getSelectedItemId();
@@ -169,7 +169,7 @@ public class CreateDeckActivity extends Activity{
 				backToParentActivity();
 			}
 		});
-		createGroup.execute(DatabaseAdapter.getUpdateDeckQuery(deckId,deckName,sectionId));
+		createGroup.execute(QueryString.getUpdateDeckQuery(deckId,deckName,sectionId));
 	}
 	
 	public void createGroupWithNameAndSectionId(String name, long sectionId){
@@ -179,7 +179,7 @@ public class CreateDeckActivity extends Activity{
 				backToParentActivity();
 			}
 		});
-		createGroup.execute(DatabaseAdapter.getCreateDeckQuery(name,sectionId));
+		createGroup.execute(QueryString.getCreateDeckQuery(name,sectionId));
 	
 	}
 	

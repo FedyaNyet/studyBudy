@@ -4,12 +4,19 @@
     <string name="app_name">StudyBudy</string>
     <string name="main_menu_new_deck">New Deck</string>
     <string name="main_menu_edit_list">Edit List</string>
+    <string name="main_menu_edit_deck">Edit Deck</string>
+    <string name="main_menu_delete">Delete Selected</string>
+    <string name="main_menu_cancel_edit">Cancel Editing</string>
     <string name="card_menu_add_new_card">Add New Card</string>
+    <string name="card_menu_edit_current_card">Edit This Card</string>
     <string name="card_menu_remove_current_card">Remove This Card</string>
     <string name="card_menu_view_all">View All Cards</string>
     <string name="card_menu_view_not_answered">View Not Answered Cards</string>
     <string name="card_menu_view_correct">View Correct Cards</string>
     <string name="card_menu_view_wrong">View Wrong Cards</string>
+    <string name="card_menu_show_previous">Show Previous Card</string>
+    <string name="card_menu_reset">Reset Answer Status</string>
+    <string name="card_menu_shuffle">Shuff Deck</string>
     <string name="search_hint">Search&#8230;</string>
     <string name="deck_name">Deck Name</string> 
 	<string name="card_back_title">Flip Back</string> 
@@ -20,8 +27,6 @@
     <string name="answer_text">Answer</string>
     <string name="flip_button">Flip</string>
     <string name="skip_button">Skip</string>
-    <string name="card_menu_show_previous">Show Previous Card</string>
-    <string name="card_menu_shuffle">Shuff Deck</string>
     <string name="correct_button">Correct</string>
     <string name="wrong_button">Wrong</string>
     <string name="status_text">O</string>
@@ -30,25 +35,13 @@
     <string name="question_label">Question:</string>
     <string name="create_card">Create Card</string>
     <string name="create_deck">Create Deck</string>
-    <string name="card_menu_reset">Reset Answer Status</string>
     <string name="answer_label">Answer:</string>
     <string name="deck_label">Deck:</string>
     <string name="subject_label">Subject:</string>
     <string name="subject_name_label">Title:</string>
-    <string name="main_menu_edit_deck">Edit Deck</string>
-    <string name="main_menu_delete">Delete Selected</string>
-    <string name="main_menu_cancel_edit">Cancel Editing</string>
     <string name="add_images">Add Images</string>
     <string name="row_multiphoto_desc">Select image</string>
     <string name="multi_photo_select">Mutliple Photo Select Activity</string>
     <string name="choose_photos">Choose Photos</string>
-    
-    <integer name="card_flip_time_half">800</integer>
-    <integer name="card_flip_time_full">400</integer>
-    
-    <string name="EXTRAS_EDITING_DECK_ID"></string>
-    <string name="EXTRAS_EDITING_DECK_NAME"></string>
-    <string name="EXTRAS_EDITING_SECTION_ID"></string>
-    <string name="EXTRAS_EDITING_SECTION_NAME"></string>
     
 </resources>

@@ -1,4 +1,5 @@
-package com.fyodorwolf.studybudy.helpers;
+package com.fyodorwolf.studybudy.db;
+
 
 import android.database.Cursor;
 import android.os.AsyncTask;

@@ -9,7 +9,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,14 +35,13 @@ import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
  *
  */
 public class MultiPhotoSelectActivity extends Activity {
- 
-    private ArrayList<String> imageUrls;
-    private ImageAdapter imageAdapter;
-    protected ImageLoader imageLoader = ImageLoader.getInstance();
 
-	private final String TAG = MultiPhotoSelectActivity.class.getSimpleName();
-    
+	public final String TAG = MultiPhotoSelectActivity.class.getSimpleName();
     public static final String RESULT_BUNDLE_INDENTIFIER = "com.fyodorwolf.studyBudy.imageStrings";
+ 
+    private ArrayList<String> _imageUrls;
+    private ImageAdapter _imageAdapter;
+    private ImageLoader _imageLoader = ImageLoader.getInstance();
  
     @Override  public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,19 +57,19 @@ public class MultiPhotoSelectActivity extends Activity {
         );
  
         /*SET GRIDVIEW ADAPTER*/
-        this.imageUrls = new ArrayList<String>();
+        this._imageUrls = new ArrayList<String>();
         for (int i = 0; i < imagecursor.getCount(); i++) {
             imagecursor.moveToPosition(i);
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
-            imageUrls.add(imagecursor.getString(dataColumnIndex));
+            _imageUrls.add(imagecursor.getString(dataColumnIndex));
         }
-        imageAdapter = new ImageAdapter(this, imageUrls);
-        ((GridView)findViewById(R.id.gridview)).setAdapter(imageAdapter);
+        _imageAdapter = new ImageAdapter(this, _imageUrls);
+        ((GridView)findViewById(R.id.gridview)).setAdapter(_imageAdapter);
         
         /*ACTIONS*/
         ((Button)findViewById(R.id.choose_photos)).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v) {          
-				ArrayList<String> selectedItems = imageAdapter.getCheckedItems();
+				ArrayList<String> selectedItems = _imageAdapter.getCheckedItems();
 				String[] files = new String[selectedItems.size()];
 	          	selectedItems.toArray(files);
 	          	Intent resultIntent = new Intent();
@@ -112,7 +110,7 @@ public class MultiPhotoSelectActivity extends Activity {
             }
             return mTempArry;
         }
-        @Override public int getCount() {  return imageUrls.size();}
+        @Override public int getCount() {  return _imageUrls.size();}
         @Override public Object getItem(int position) { return null;}
         @Override public long getItemId(int position) {return position;}
  
@@ -124,7 +122,7 @@ public class MultiPhotoSelectActivity extends Activity {
             final CheckBox mCheckBox = (CheckBox) convertView.findViewById(R.id.checkBox1);
             final ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView1);
  
-            imageLoader.displayImage("file://"+imageUrls.get(position), imageView, null, new SimpleImageLoadingListener() {
+            _imageLoader.displayImage("file://"+_imageUrls.get(position), imageView, null, new SimpleImageLoadingListener() {
             	@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage){
                     Animation anim = AnimationUtils.loadAnimation(MultiPhotoSelectActivity.this, android.R.anim.fade_in);
                     imageView.setAnimation(anim);

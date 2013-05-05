@@ -3,9 +3,10 @@ package com.fyodorwolf.studybudy;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
-import com.fyodorwolf.studybudy.helpers.QueryRunner;
-import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
+import com.fyodorwolf.studybudy.db.DatabaseAdapter;
+import com.fyodorwolf.studybudy.db.QueryRunner;
+import com.fyodorwolf.studybudy.db.QueryString;
+import com.fyodorwolf.studybudy.db.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.models.*;
 
 import android.app.AlertDialog;
@@ -26,8 +27,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ExpandableListAdapter;
@@ -89,7 +88,7 @@ public class MainActivity extends ExpandableListActivity{
                             	in.hideSoftInputFromWindow(searchBox.getWindowToken(), 0);
                 			}
                 		});
-                        sectionsQuery.execute(DatabaseAdapter.getSearchTermQuery(searchString));
+                        sectionsQuery.execute(QueryString.getSearchTermQuery(searchString));
     	        	}
                     return true;
     	        }
@@ -110,8 +109,8 @@ public class MainActivity extends ExpandableListActivity{
 					Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
 					deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
 	                            		Intent.FLAG_ACTIVITY_NO_ANIMATION);
-					deckIntent.putExtra(DeckActivity.DECK_ID_EXTRAS_KEY, deckId);
-					deckIntent.putExtra(DeckActivity.DECK_NAME_EXTRAS_KEY, ((TextView)child.findViewById(android.R.id.text1)).getText());
+					deckIntent.putExtra(DeckActivity.EXTRAS_DECK_ID, deckId);
+					deckIntent.putExtra(DeckActivity.EXTRAS_DECK_NAME, ((TextView)child.findViewById(android.R.id.text1)).getText());
 					Deck clickedDeck = _sections.get(groupIdx).getDeckById(deckId);
 					if(searching && clickedDeck.cards.size()>0){
 						//build an array of card id's to show in the next activity...
@@ -121,7 +120,7 @@ public class MainActivity extends ExpandableListActivity{
 							cardIds[cardIdIdx] = searchCard.id;
 							cardIdIdx++;
 						}
-						deckIntent.putExtra(DeckActivity.CARD_IDS_EXTRAS_KEY, cardIds);
+						deckIntent.putExtra(DeckActivity.EXTRAS_CARD_IDS, cardIds);
 					}
 					startActivity(deckIntent);
 				}
@@ -140,7 +139,7 @@ public class MainActivity extends ExpandableListActivity{
 				gotSections(cards);
 			}
 		});
-        sectionsQuery.execute(DatabaseAdapter.getGroupedDeckQuery());
+        sectionsQuery.execute(QueryString.getGroupedDeckQuery());
 	}
 
 	@Override public boolean onCreateOptionsMenu(Menu menu) {
@@ -200,7 +199,7 @@ public class MainActivity extends ExpandableListActivity{
     }
     
     private void runCreateDeckActivity(long deckId) {
-    	Intent createDeckIntent = new Intent(MainActivity.this,CreateDeckActivity.class);
+    	Intent createDeckIntent = new Intent(MainActivity.this,DeckFormActivity.class);
     	createDeckIntent.setFlags(
 			Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
             Intent.FLAG_ACTIVITY_NO_ANIMATION
@@ -211,10 +210,10 @@ public class MainActivity extends ExpandableListActivity{
     		sectionNames[idx] = _sections.get(idx).name;
     		sectionIds[idx] = _sections.get(idx).id;
     	}
-    	createDeckIntent.putExtra(CreateDeckActivity.EXTRAS_SECTION_IDS, sectionIds);
-    	createDeckIntent.putExtra(CreateDeckActivity.EXTRAS_SECTION_NAMES, sectionNames);
+    	createDeckIntent.putExtra(DeckFormActivity.EXTRAS_SECTION_IDS, sectionIds);
+    	createDeckIntent.putExtra(DeckFormActivity.EXTRAS_SECTION_NAMES, sectionNames);
     	if(deckId > 0){
-    		createDeckIntent.putExtra(CreateDeckActivity.EXTRAS_EDITING_DECK_ID, deckId);
+    		createDeckIntent.putExtra(DeckFormActivity.EXTRAS_EDITING_DECK_ID, deckId);
     	}
     	startActivity(createDeckIntent);
 	}
@@ -325,37 +324,63 @@ public class MainActivity extends ExpandableListActivity{
     
     private AlertDialog deleteDecks() {
     	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
-           //set message, title, and icon
-           .setTitle("Delete Card") 
-           .setMessage("Are you sure you want to delete these decks?") 
-           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-        	   public void onClick(DialogInterface dialog, int whichButton) { 
-            	   	QueryRunner deleteDecks = new QueryRunner(myDB);
-               		deleteDecks.setQueryRunnerListener(new QueryRunnerListener(){
-	   					@Override public void onPostExcecute(Cursor cursor) {
-	   						QueryRunner deleteEmptySections = new QueryRunner(myDB);
-	   						deleteEmptySections.setQueryRunnerListener(new QueryRunnerListener(){
-	   							@Override public void onPostExcecute(Cursor cursor) {
-	   						        listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-	   						        listView.setItemsCanFocus(true);
-	   			               		doneEditing();
-	   								preformNormalSearch();
-	   					        }
-	   						});
-	   						deleteEmptySections.execute(DatabaseAdapter.getRemoveEmptySectionsQuery());
-	   					}
-	   				});
-	               	deleteDecks.execute(DatabaseAdapter.getRemoveDecksWithIdsQuery(listView.getCheckedItemIds()));
-               } 
-           })
-           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-               public void onClick(DialogInterface dialog, int which) {
-                   	dialog.dismiss();
-               		doneEditing();
-               }
-           })
-           .create();
-       return myDeleteConfirmationBox;
+    	//set message, title, and icon
+    		.setTitle("Delete Card") 
+    		.setMessage("Are you sure you want to delete these decks?") 
+    		.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+    			public void onClick(DialogInterface dialog, int whichButton) { 
+    				long[] deckIds = listView.getCheckedItemIds();
+    				//get all deck photo files.
+        		   	QueryRunner getPhotosForDeck = new QueryRunner(myDB);
+        		   	getPhotosForDeck.setQueryRunnerListener(new QueryRunnerListener(){
+						@Override public void onPostExcecute(Cursor cursor) {
+							int size = cursor.getCount();
+							long[] photoIds = new long[size];
+							long[] cardIds = new long[size];
+							String[] filenames = new String[size];
+							cursor.moveToPosition(-1);
+							while(cursor.moveToNext()){
+								long photoId = cursor.getLong(0);
+								String filename = cursor.getString(1);
+								long cardId = cursor.getLong(2);
+							}
+							//delete photo in photoIds[]
+							QueryRunner deletePhotosQuery = new QueryRunner(myDB);
+							deletePhotosQuery.execute(QueryString.getDeletePhotosQuery(photoIds));
+							//delete card in cardIds[]
+							QueryRunner deleteCardsQuery = new QueryRunner(myDB);
+							deleteCardsQuery.execute(QueryString.getDeleteCardsQuery(cardIds));
+							//delete file with filename;
+							
+						}
+        		   	});
+        		   	getPhotosForDeck.execute(QueryString.getPhotosForDeck(deckIds));
+//    				QueryRunner deleteDecks = new QueryRunner(myDB);
+//    				deleteDecks.setQueryRunnerListener(new QueryRunnerListener(){
+//    					@Override public void onPostExcecute(Cursor cursor) {
+//    						QueryRunner deleteEmptySections = new QueryRunner(myDB);
+//    						deleteEmptySections.setQueryRunnerListener(new QueryRunnerListener(){
+//    							@Override public void onPostExcecute(Cursor cursor) {
+//    								listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+//    								listView.setItemsCanFocus(true);
+//									doneEditing();
+//									preformNormalSearch();
+//    							}
+//    						});
+//    						deleteEmptySections.execute(QueryString.getRemoveEmptySectionsQuery());
+//						}
+//   					});
+//    				deleteDecks.execute(QueryString.getRemoveDecksWithIdsQuery(deckIds));
+    			} 
+			})
+			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.dismiss();
+					doneEditing();
+				}
+			})
+			.create();
+    	return myDeleteConfirmationBox;
    }
     
 }

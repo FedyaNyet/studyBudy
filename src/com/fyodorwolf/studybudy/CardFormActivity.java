@@ -9,9 +9,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 
-import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
-import com.fyodorwolf.studybudy.helpers.QueryRunner;
-import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
+import com.fyodorwolf.studybudy.db.DatabaseAdapter;
+import com.fyodorwolf.studybudy.db.QueryRunner;
+import com.fyodorwolf.studybudy.db.QueryString;
+import com.fyodorwolf.studybudy.db.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.models.Photo;
 import com.fyodorwolf.studybudy.ui.HorizontalListView;
 import com.nostra13.universalimageloader.core.ImageLoader;
@@ -39,16 +40,19 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class CreateCardActivity extends Activity {
+public class CardFormActivity extends Activity {
 
+	public static final String TAG = "CardFormActivity";
+	public static final String EXTRAS_CARD_ID = "com.fyodorwolf.studyBudy.cardId";
+	
+	long cardId;
 	long deckId;
 	String deckName;
 	LinearLayout gallery;
-	private static final String TAG = "CreateCardActivity";
-	private CreateCardActivity thisActivity;
 	
-	ArrayList<File> imageFiles = new ArrayList<File>();
-	String[] imagePaths = new String[0];
+	private ArrayList<File> imageFiles = new ArrayList<File>();
+	private String[] imagePaths = new String[0];
+	private boolean editing = false;
 	
 	private static final int IMAGE_REQUEST_CODE = 1;
 
@@ -56,10 +60,11 @@ public class CreateCardActivity extends Activity {
         super.onCreate(savedInstanceState);
 		setContentView(R.layout.create_card);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
-		thisActivity = this;
-		
+	    
 		deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
 		deckName =  getIntent().getExtras().getString("com.fyodorwolf.studyBudy.deckName");
+		cardId = getIntent().getLongExtra(EXTRAS_CARD_ID, 0);
+		
 		setTitle("Add New Card to "+deckName);
 		if(imagePaths.length<1){
 			hideImageGallary();
@@ -67,6 +72,28 @@ public class CreateCardActivity extends Activity {
 
 		final TextView question = (TextView) this.findViewById(R.id.question_input);
 		final TextView answer = (TextView) this.findViewById(R.id.answer_input);
+		
+		if(cardId > 0){
+			setTitle("Edit Card in "+deckName);
+			editing  = true;
+			QueryRunner getCard = new QueryRunner(DatabaseAdapter.getInstance());
+			getCard.setQueryRunnerListener(new QueryRunnerListener(){
+				@Override public void onPostExcecute(Cursor cursor) {
+					cursor.moveToFirst();
+					String questionText = cursor.getString(0);
+					String answerText = cursor.getString(1);
+					question.setText(questionText);
+					answer.setText(answerText);
+					cursor.moveToPosition(-1);
+					while(cursor.moveToNext()){
+						String filename = cursor.getString(3);
+						imageFiles.add(new File(filename));
+					}
+					showImageGallary();
+				}
+			});
+			getCard.execute(QueryString.getCardWithPhotosQuery(cardId));
+		}
 		findViewById(R.id.create_card).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v){
 				String question_text = question.getText().toString();
@@ -104,19 +131,19 @@ public class CreateCardActivity extends Activity {
 										backToParentActivity();
 									}
 								});
-								addImagesToLatestCard.execute(DatabaseAdapter.getCreatePhotoForLatestCardQuery(absPaths));
+								addImagesToLatestCard.execute(QueryString.getCreatePhotoForLatestCardQuery(absPaths));
 							}else{
 								backToParentActivity();
 							}
 						}
 					});
-					createCard.execute(DatabaseAdapter.getCreateCardQuery(question_text,answer_text,deckId));
+					createCard.execute(QueryString.getCreateCardQuery(question_text,answer_text,deckId));
 				}
 			}
 		});
 		findViewById(R.id.add_images).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v) {
-				Intent multiSelect = new Intent(thisActivity, MultiPhotoSelectActivity.class);
+				Intent multiSelect = new Intent(CardFormActivity.this, MultiPhotoSelectActivity.class);
 				startActivityForResult(multiSelect,IMAGE_REQUEST_CODE);
 			}
 		});

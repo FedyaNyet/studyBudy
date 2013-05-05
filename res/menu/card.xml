@@ -2,9 +2,14 @@
 
     <item
         android:id="@+id/card_menu_add_new_card"
-        android:orderInCategory="100"
+        android:orderInCategory="99"
         android:showAsAction="never"
         android:title="@string/card_menu_add_new_card"/>
+    <item
+        android:id="@+id/card_menu_edit_current_card"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/card_menu_edit_current_card"/>
     <item
         android:id="@+id/card_menu_remove_current_card"
         android:orderInCategory="101"

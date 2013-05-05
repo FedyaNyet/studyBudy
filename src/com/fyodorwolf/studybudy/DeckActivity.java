@@ -1,18 +1,16 @@
 package com.fyodorwolf.studybudy;
 
-import java.io.File;
 import java.util.ArrayList;
 
-
-import com.fyodorwolf.studybudy.helpers.DatabaseAdapter;
+import com.fyodorwolf.studybudy.db.DatabaseAdapter;
+import com.fyodorwolf.studybudy.db.QueryRunner;
+import com.fyodorwolf.studybudy.db.QueryString;
+import com.fyodorwolf.studybudy.db.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.helpers.DeckAdapter;
-import com.fyodorwolf.studybudy.helpers.QueryRunner;
 import com.fyodorwolf.studybudy.helpers.ViewFlipper;
-import com.fyodorwolf.studybudy.helpers.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.helpers.ViewFlipper.ViewSwapperListener;
 import com.fyodorwolf.studybudy.models.*;
 import com.fyodorwolf.studybudy.ui.HorizontalListView;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
@@ -22,9 +20,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.DataSetObserver;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -39,44 +35,42 @@ import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ImageView.ScaleType;
 import android.support.v4.view.ViewPager;
 
 public class DeckActivity extends Activity implements ViewPager.PageTransformer {
 
-	private static final String TAG = "ListActivity";
+	public static final String TAG = "ListActivity";
+	public static final String EXTRAS_DECK_ID = "com.fyodorwolf.studyBudy.deckId";
+	public static final String EXTRAS_DECK_NAME = "com.fyodorwolf.studyBudy.deckName";
+	public static final String EXTRAS_CARD_IDS = "com.fyodorwolf.studyBudy.cardIds";
 	
+	public static final int SWIPE_MIN_DISTANCE = 120;
+	public static final int SWIPE_MAX_OFF_PATH = 250;
+	public static final int SWIPE_THRESHOLD_VELOCITY = 2000;
+	public static final long ANIMATION_DURATION = 300;
+	
+	/*Adapters*/
 	private DatabaseAdapter myDB;
 	private DeckAdapter myDeckAdapter;
 	
+	/*UX*/
+    private GestureDetector gestureDetector;
+	
+    /*UI*/
 	private RelativeLayout cardFront;
 	private RelativeLayout cardBack;
 	private RelativeLayout animatedCardFront;
 	private RelativeLayout actionsView;
 	
+	/*BL*/
 	private boolean showingCardFront = true;
 	private boolean animating = false;
     
-	private static final int SWIPE_MIN_DISTANCE = 120;
-    private static final int SWIPE_MAX_OFF_PATH = 250;
-    private static final int SWIPE_THRESHOLD_VELOCITY = 2000;
-	private static final long ANIMATION_DURATION = 300;
-
-	public static final String DECK_ID_EXTRAS_KEY = "com.fyodorwolf.studyBudy.deckId";
-	public static final String DECK_NAME_EXTRAS_KEY = "com.fyodorwolf.studyBudy.deckName";
-	public static final String CARD_IDS_EXTRAS_KEY = "com.fyodorwolf.studyBudy.cardIds";
-	
-    GestureDetector gestureDetector;
 
 	@Override protected void onCreate(Bundle savedInstanceState){
 
@@ -94,9 +88,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
-		long deckId =  getIntent().getExtras().getLong(DECK_ID_EXTRAS_KEY);
-		String deckName =  getIntent().getExtras().getString(DECK_NAME_EXTRAS_KEY);
-		long[] cardIds =  getIntent().getExtras().getLongArray(CARD_IDS_EXTRAS_KEY);
+		long deckId =  getIntent().getExtras().getLong(EXTRAS_DECK_ID);
+		String deckName =  getIntent().getExtras().getString(EXTRAS_DECK_NAME);
+		long[] cardIds =  getIntent().getExtras().getLongArray(EXTRAS_CARD_IDS);
 		myDeckAdapter = new DeckAdapter(new Deck(deckId,deckName));
 		
         setTitle(deckName);
@@ -114,7 +108,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
 				long card_id = myDeckAdapter.getCurrentCard().id;
 				myDeckAdapter.setCardStatus(card_id, Card.STATUS_CORRECT);
-				setStatusQuery.execute(DatabaseAdapter.getCardUpdateStatusQuery(card_id,Card.STATUS_CORRECT));
+				setStatusQuery.execute(QueryString.getCardUpdateStatusQuery(card_id,Card.STATUS_CORRECT));
 			}
 		});
         findViewById(R.id.button_wrong).setOnClickListener(new OnClickListener(){
@@ -124,7 +118,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
 				long card_id = myDeckAdapter.getIdOfCardAtIndex(myDeckAdapter.stackIndex);
 				myDeckAdapter.setCardStatus(card_id, Card.STATUS_WRONG);
-				setStatusQuery.execute(DatabaseAdapter.getCardUpdateStatusQuery(card_id,Card.STATUS_WRONG));
+				setStatusQuery.execute(QueryString.getCardUpdateStatusQuery(card_id,Card.STATUS_WRONG));
 			}
 		});
         
@@ -136,9 +130,9 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				buildDeck(cards);
 			}
         });
-    	String getCardQuery = DatabaseAdapter.getCardsWithDeckIdQuery(deckId);
+    	String getCardQuery = QueryString.getCardsWithDeckIdQuery(deckId);
     	if(cardIds != null){
-    		getCardQuery = DatabaseAdapter.getCardsWithIdsQuery(cardIds);
+    		getCardQuery = QueryString.getCardsWithIdsQuery(cardIds);
     	}
     	query.execute(getCardQuery);
 
@@ -192,10 +186,25 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     }
     
     @Override public boolean onPrepareOptionsMenu(Menu menu){
+    	menu.findItem(R.id.card_menu_edit_current_card).setVisible(false);
+    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(false);
+    	menu.findItem(R.id.card_menu_show_previous).setVisible(false);
+    	menu.findItem(R.id.card_menu_shuffle).setVisible(false);
+    	menu.findItem(R.id.card_menu_reset).setVisible(false);
+    	if(this.myDeckAdapter.getDeckCount()>0){
+        	menu.findItem(R.id.card_menu_edit_current_card).setVisible(true);
+        	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
+        	menu.findItem(R.id.card_menu_reset).setVisible(true);
+        	if(this.myDeckAdapter.getDeckCount()>1){
+            	menu.findItem(R.id.card_menu_show_previous).setVisible(true);
+            	menu.findItem(R.id.card_menu_shuffle).setVisible(true);
+        	}
+    	}
 		menu.findItem(R.id.card_menu_view_not_answered).setVisible(false);
 		menu.findItem(R.id.card_menu_view_wrong).setVisible(false);
 		menu.findItem(R.id.card_menu_view_correct).setVisible(false);
 		menu.findItem(R.id.card_menu_view_all).setVisible(false);
+		
     	switch(myDeckAdapter.currentStack){
 	    	case DeckAdapter.STACK_NOT_ANSWERED:
 				if(myDeckAdapter.stackCounts[DeckAdapter.STACK_CORRECT]>0){
@@ -249,28 +258,41 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 
     @Override public boolean onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
-        switch (item.getItemId()) {
+        switch (item.getItemId()){
             case android.R.id.home:
                 Intent parentActivityIntent = new Intent(this, MainActivity.class);
                 parentActivityIntent.addFlags(
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION|
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP |
-                        Intent.FLAG_ACTIVITY_NEW_TASK);
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION|
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                );
                 startActivity(parentActivityIntent);
                 overridePendingTransition(0,0);
                 finish();
             	break;
+            case R.id.card_menu_add_new_card:
+            	Intent createCardIntent = new Intent(DeckActivity.this,CardFormActivity.class);
+            	createCardIntent.setFlags(
+					Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION
+                );
+            	createCardIntent.putExtra(EXTRAS_DECK_ID, myDeckAdapter.getDeckId());
+				createCardIntent.putExtra(EXTRAS_DECK_NAME,  myDeckAdapter.getDeckName());
+				startActivity(createCardIntent);
+            	break;
+            case R.id.card_menu_edit_current_card:
+            	Intent editCardIntent = new Intent(DeckActivity.this,CardFormActivity.class);
+            	editCardIntent.setFlags(
+					Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION
+                );
+            	editCardIntent.putExtra(EXTRAS_DECK_ID, myDeckAdapter.getDeckId());
+            	editCardIntent.putExtra(EXTRAS_DECK_NAME,  myDeckAdapter.getDeckName());
+            	editCardIntent.putExtra(CardFormActivity.EXTRAS_CARD_ID,  myDeckAdapter.getCurrentCard().id);
+				startActivity(editCardIntent);
+            	break;
             case R.id.card_menu_remove_current_card:
             	deleteCard().show();
-            	break;
-            case R.id.card_menu_add_new_card:
-            	Intent createCardIntent = new Intent(DeckActivity.this,CreateCardActivity.class);
-            	createCardIntent.setFlags(
-						Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            	createCardIntent.putExtra(DECK_ID_EXTRAS_KEY, myDeckAdapter.getDeckId());
-				createCardIntent.putExtra(DECK_NAME_EXTRAS_KEY,  myDeckAdapter.getDeckName());
-				startActivity(createCardIntent);
             	break;
             case R.id.card_menu_shuffle:
             	myDeckAdapter.shuffleDeck();
@@ -287,7 +309,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     					buildDeck(cards);
     				}
             	});
-            	getNotAnsweredCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_NONE));
+            	getNotAnsweredCards.execute(QueryString.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_NONE));
             	break;
             case R.id.card_menu_view_correct:
             	myDeckAdapter.nowShowingCorrect();
@@ -297,7 +319,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     					buildDeck(cards);
     				}
             	});
-            	getCorrectCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_CORRECT));
+            	getCorrectCards.execute(QueryString.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_CORRECT));
             	break;
             case R.id.card_menu_view_wrong:
             	myDeckAdapter.nowShowingWrong();
@@ -307,7 +329,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     					buildDeck(cards);
     				}
             	});
-            	getWrongCards.execute(DatabaseAdapter.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_WRONG));
+            	getWrongCards.execute(QueryString.getCardsWithDeckIdAndStatusQuery(myDeckAdapter.getDeckId(), Card.STATUS_WRONG));
             	break;
             case R.id.card_menu_view_all:
             	changeToAllStack();
@@ -333,7 +355,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				buildDeck(cards);
 			}
     	});
-    	getAllCards.execute(DatabaseAdapter.getCardsWithDeckIdQuery(myDeckAdapter.getDeckId()));
+    	getAllCards.execute(QueryString.getCardsWithDeckIdQuery(myDeckAdapter.getDeckId()));
     }
     
     private void nextCard(){
@@ -581,7 +603,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 			changeToAllStack();
                 		}
                 	});
-                	resetAllCards.execute(DatabaseAdapter.getResetAllCardsInDeckStatusQuery(myDeckAdapter.getDeckId()));
+                	resetAllCards.execute(QueryString.getResetAllCardsInDeckStatusQuery(myDeckAdapter.getDeckId()));
                } 
            })
            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -613,7 +635,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		       				nextCard();
 		       			}
 		           	});
-		           	String queryString = DatabaseAdapter.getRemoveCardQuery(myDeckAdapter.getCurrentCard().id);
+		           	String queryString = QueryString.getRemoveCardQuery(myDeckAdapter.getCurrentCard().id);
 		           	deleteCardQuery.execute(queryString);
                } 
            })
