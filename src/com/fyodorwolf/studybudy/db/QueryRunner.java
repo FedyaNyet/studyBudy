@@ -35,6 +35,11 @@ import android.os.AsyncTask;
 		};
 	}
 	
+	public QueryRunner(DatabaseAdapter dbAdapter, QueryRunnerListener listener){
+		this._myAdapter = dbAdapter;
+		this._myListener = listener;
+	}
+	
 	@Override
 	protected Cursor doInBackground(String... params) {
 		return _myAdapter.getCursor(params[0]);

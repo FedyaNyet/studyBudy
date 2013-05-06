@@ -635,7 +635,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 		       				nextCard();
 		       			}
 		           	});
-		           	String queryString = QueryString.getRemoveCardQuery(myDeckAdapter.getCurrentCard().id);
+		           	String queryString = QueryString.getDeleteCardQuery(myDeckAdapter.getCurrentCard().id);
 		           	deleteCardQuery.execute(queryString);
                } 
            })

@@ -1,7 +1,9 @@
 package com.fyodorwolf.studybudy;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
 import com.fyodorwolf.studybudy.db.QueryRunner;
@@ -330,47 +332,25 @@ public class MainActivity extends ExpandableListActivity{
     		.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
     			public void onClick(DialogInterface dialog, int whichButton) { 
     				long[] deckIds = listView.getCheckedItemIds();
-    				//get all deck photo files.
-        		   	QueryRunner getPhotosForDeck = new QueryRunner(myDB);
-        		   	getPhotosForDeck.setQueryRunnerListener(new QueryRunnerListener(){
-						@Override public void onPostExcecute(Cursor cursor) {
-							int size = cursor.getCount();
-							long[] photoIds = new long[size];
-							long[] cardIds = new long[size];
-							String[] filenames = new String[size];
-							cursor.moveToPosition(-1);
-							while(cursor.moveToNext()){
-								long photoId = cursor.getLong(0);
-								String filename = cursor.getString(1);
-								long cardId = cursor.getLong(2);
-							}
-							//delete photo in photoIds[]
-							QueryRunner deletePhotosQuery = new QueryRunner(myDB);
-							deletePhotosQuery.execute(QueryString.getDeletePhotosQuery(photoIds));
-							//delete card in cardIds[]
-							QueryRunner deleteCardsQuery = new QueryRunner(myDB);
-							deleteCardsQuery.execute(QueryString.getDeleteCardsQuery(cardIds));
-							//delete file with filename;
-							
+    				
+    				/*DELETE THE PHOTOS, CARDS AND FILES OF THIS DECK*/
+    				MainActivity.deleteAssociationsForDeckIds(MainActivity.this,deckIds);
+    				
+    				/*DELETE ACTUAL DECK*/
+    				new QueryRunner(myDB, new QueryRunnerListener(){
+    					@Override public void onPostExcecute(Cursor cursor) {
+    						QueryRunner deleteEmptySections = new QueryRunner(myDB);
+    						deleteEmptySections.setQueryRunnerListener(new QueryRunnerListener(){
+    							@Override public void onPostExcecute(Cursor cursor) {
+    								listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+    								listView.setItemsCanFocus(true);
+									doneEditing();
+									preformNormalSearch();
+    							}
+    						});
+    						deleteEmptySections.execute(QueryString.getRemoveEmptySectionsQuery());
 						}
-        		   	});
-        		   	getPhotosForDeck.execute(QueryString.getPhotosForDeck(deckIds));
-//    				QueryRunner deleteDecks = new QueryRunner(myDB);
-//    				deleteDecks.setQueryRunnerListener(new QueryRunnerListener(){
-//    					@Override public void onPostExcecute(Cursor cursor) {
-//    						QueryRunner deleteEmptySections = new QueryRunner(myDB);
-//    						deleteEmptySections.setQueryRunnerListener(new QueryRunnerListener(){
-//    							@Override public void onPostExcecute(Cursor cursor) {
-//    								listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-//    								listView.setItemsCanFocus(true);
-//									doneEditing();
-//									preformNormalSearch();
-//    							}
-//    						});
-//    						deleteEmptySections.execute(QueryString.getRemoveEmptySectionsQuery());
-//						}
-//   					});
-//    				deleteDecks.execute(QueryString.getRemoveDecksWithIdsQuery(deckIds));
+   					}).execute(QueryString.getRemoveDecksWithIdsQuery(deckIds));
     			} 
 			})
 			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -382,5 +362,50 @@ public class MainActivity extends ExpandableListActivity{
 			.create();
     	return myDeleteConfirmationBox;
    }
+
+	protected static void deleteAssociationsForDeckIds(Context context, long[] deckIds) {
+		final DatabaseAdapter myDB = DatabaseAdapter.getInstance();
+		final Context myContext = context;
+		//get all deck photo files.
+	   	new QueryRunner(myDB, new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cursor) {
+				if(cursor.getCount()>0){
+					int size = cursor.getCount();
+					long[] cardIds = new long[size];
+					String[] photoFilenames = new String[size];
+					HashSet<String> photoPathsInDB = new HashSet<String>();
+					cursor.moveToPosition(-1);
+					while(cursor.moveToNext()){
+						String filename = cursor.getString(1);
+						long cardId = cursor.getLong(2);
+						cardIds[cursor.getPosition()] = cardId;
+						photoFilenames[cursor.getPosition()] = filename;
+						photoPathsInDB.add(filename);
+					}
+					
+					/*DELETE PHOTO IN PHOTOIDS[]*/
+					new QueryRunner(myDB)
+						.execute(QueryString.getDeletePhotosWithFilenamesQuery(photoFilenames));
+					
+					/*DELETE CARD IN CARDIDS[]*/
+					new QueryRunner(myDB).execute(QueryString.getDeleteCardsQuery(cardIds));
+
+					/*DELETE FILES THAT DON'T HAVE DB ENTRIES*/
+					unlinkedFiles(myContext, photoPathsInDB);
+				}
+				
+			}
+	   	}).execute(QueryString.getCardsWithPhotosForDecksQuery(deckIds));
+	}
     
+	public static void unlinkedFiles(Context context, HashSet<String> filePaths){
+		String appDir = context.getFilesDir()+"/";
+		File[] files =  new File(appDir).listFiles();
+		for(File file : files){
+			String existingFilePath = file.getAbsolutePath();
+			if(!filePaths.contains(existingFilePath)){
+				file.delete();
+			}
+		}
+	}
 }

@@ -4,6 +4,17 @@ public class QueryString {
 
 	private QueryString(){};
 	
+	public static String join(String[] array){
+		return join(array,",");
+	}
+	public static String join(String[] array, String delimiter){
+		String ids = "";
+		for(String deckId : array){
+			ids += "\""+deckId+"\""+delimiter;
+		}
+		return ids.substring(0,ids.length()-1);
+	}
+	
 	public static String join(long[] array){
 		return join(array,",");
 	}
@@ -39,6 +50,24 @@ public class QueryString {
 			"ORDER BY sec.name ASC";
 	}
 	
+	public static String getCreateCardQuery(String question, String answer,long deckId) {
+		return "INSERT INTO Card (question,answer,deckId) VALUES (\""+question+"\",\""+answer+"\","+deckId+")";
+	}
+
+	public static String getUpdateCardQuery(long cardId, String question_text, String answer_text) {
+		return null;
+	}
+
+	public static String getDeleteCardQuery(long cardId){
+		long[] ids = {cardId};
+		return getDeleteCardsQuery(ids);
+	}
+
+	public static String getDeleteCardsQuery(long[] cardIds) {
+		// TODO Auto-generated method stub
+		return "DELETE FROM Card WHERE _id IN ("+join(cardIds)+")";
+	}
+
 	public static String getCardsWithIdsQuery(long[] cardIds) {
 		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WHERE c._id IN ("+join(cardIds)+")";
 	}
@@ -55,18 +84,36 @@ public class QueryString {
 		return "UPDATE Card SET status = "+status+" WHERE  _id = "+cardId;
 	}
 	
-	public static String getCreateCardQuery(String question, String answer,long deckId) {
-		return "INSERT INTO Card (question,answer,deckId) VALUES (\""+question+"\",\""+answer+"\","+deckId+")";
+	public static String getCardWithPhotosQuery(long cardId){
+		return "SELECT c.question, c.answer, p._id, p.filename, orderNum FROM Card c LEFT OUTER JOIN Photo p on c._id =  p.cardId WHERE c._id ="+cardId;
 	}
 	
+	public static String getCreatePhotoForCardQuery(long cardId, String[] imagePaths) {
+		String values= "";
+		int orderNum = 0;
+		for(String path: imagePaths){
+			values += "(\""+path+"\","+cardId+","+orderNum+"),";
+			orderNum++;
+		}
+		values = values.substring(0,values.length()-1);
+		return "INSERT INTO Photo (filename,cardId,orderNum) values "+values;
+	}
+
+	public static String getDeletePhotosWithFilenamesQuery(String[] photoNames) {
+		return "DELETE FROM Photo WHERE filename IN ("+join(photoNames)+")";
+	}
+	
+	public static String getCardsWithPhotosForDecksQuery(long[] deckIds) {
+		return 	"SELECT p._id, p.filename, c._id FROM Deck d " +
+				"LEFT OUTER JOIN Card c on c.deckId = d._id " +
+				"LEFT OUTER JOIN Photo p on p.cardId = c._id " +
+				"WHERE d._id IN("+join(deckIds)+")";
+	}
+
 	public static String getLastCardIdQuery() {
 		return "SELECT MAX(_id) from Card";
 	}
 
-	public static String getRemoveCardQuery(long cardId){
-		return "DELETE FROM Card WHERE _id = "+cardId;
-	}
-	
 	public static String getCreateSectionQuery(String sectionName) {
 		return "INSERT INTO Section (name) values (\""+sectionName+"\")";
 	}
@@ -77,44 +124,6 @@ public class QueryString {
 	
 	public static String getResetAllCardsInDeckStatusQuery(long deckId){
 		return "UPDATE Card set status = 0 WHERE deckId = "+deckId;
-	}
-	
-	public static String getCreateDeckQuery(String deckName, long sectionId) {
-		return "INSERT INTO Deck (name,sectionId) values (\""+deckName+"\","+sectionId+")";
-	}
-	
-	public static String getCardWithPhotosQuery(long cardId){
-		return "SELECT c.question, c.answer, p._id, p.filename FROM Card c LEFT OUTER JOIN Photo p on c._id =  p.cardId WHERE c._id ="+cardId;
-	}
-	
-	public static String getCreatePhotoForLatestCardQuery(String[] imagePaths) {
-		String values= "";
-		int orderNum = 0;
-		for(String path: imagePaths){
-			values += "(\""+path+"\",(SELECT MAX(_id) from Card),"+orderNum+"),";
-			orderNum++;
-		}
-		values = values.substring(0,values.length()-1);
-		return "INSERT INTO Photo (filename,cardId,orderNum) values "+values;
-	}
-	public static String getPhotosWithCardIdQuery(long cardId){
-		return "SELECT _id, filename, orderNum FROM Photo where cardId = "+cardId;
-	}
-
-	public static String getDeckQuery(long deckId) {
-		return "SELECT _id, name, sectionId FROM Deck WHERE _id = "+deckId;
-	}
-	
-	public static String getUpdateDeckQuery(long deckId, String deckName, long sectionId) {
-		return "UPDATE Deck SET name=\""+deckName+"\", sectionId="+sectionId+" WHERE _id="+deckId;
-	}
-
-	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
-		return "DELETE FROM Deck WHERE _id IN ("+join(deckIds)+")";
-	}
-	
-	public static String getRemoveEmptySectionsQuery(){
-		return "DELETE FROM Section WHERE _id NOT IN (SELECT DISTINCT(sectionId) from Deck)";
 	}
 	
 	public static String getGroupedDeckQuery(){
@@ -129,17 +138,36 @@ public class QueryString {
 				"ORDER BY sec.name ASC";
 	}
 
-	public static String getPhotosForDeck(long[] deckIds) {
-		return "SELECT p._id, p.filename, p.cardId FROM Deck d, Card c, Photo p WHERE d._id  = c.deckId and c._id = p.cardId AND d._id IN("+join(deckIds)+")";
+	public static String getCreateDeckQuery(String deckName, long sectionId) {
+		return "INSERT INTO Deck (name,sectionId) values (\""+deckName+"\","+sectionId+")";
+	}
+	
+	public static String getDeckQuery(long deckId) {
+		return "SELECT _id, name, sectionId FROM Deck WHERE _id = "+deckId;
 	}
 
-	public static String getDeletePhotosQuery(long[] photoIds) {
-		return "DELETE FROM Photo WHERE _id IN ("+join(photoIds)+")";
+	public static String getCreatePhotoForLatestCardQuery(String[] imagePaths) {
+		String values= "";
+		int orderNum = 0;
+		for(String path: imagePaths){
+			values += "(\""+path+"\",(SELECT MAX(_id) from Card),"+orderNum+"),";
+			orderNum++;
+		}
+		values = values.substring(0,values.length()-1);
+		return "INSERT INTO Photo (filename,cardId,orderNum) values "+values;
 	}
 
-	public static String getDeleteCardsQuery(long[] cardIds) {
-		// TODO Auto-generated method stub
-		return "DELETE FORM Card WHERE _id IN ("+join(cardIds)+")";
+
+	public static String getUpdateDeckQuery(long deckId, String deckName, long sectionId) {
+		return "UPDATE Deck SET name=\""+deckName+"\", sectionId="+sectionId+" WHERE _id="+deckId;
+	}
+
+	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
+		return "DELETE FROM Deck WHERE _id IN ("+join(deckIds)+")";
+	}
+	
+	public static String getRemoveEmptySectionsQuery(){
+		return "DELETE FROM Section WHERE _id NOT IN (SELECT DISTINCT(sectionId) from Deck)";
 	}
 	
 	

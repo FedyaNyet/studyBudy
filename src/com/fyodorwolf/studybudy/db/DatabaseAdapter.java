@@ -28,7 +28,7 @@ import android.util.Log;
  */
 public class DatabaseAdapter
 {
-	public final static boolean WIPE_DATABASE = false;
+	public final static boolean WIPE_DATABASE = true;
 	
 	protected static final String TAG = "DataAdapter";
     

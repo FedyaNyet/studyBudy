@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
@@ -50,14 +52,16 @@ public class CardFormActivity extends Activity {
 	String deckName;
 	LinearLayout gallery;
 	
+	DatabaseAdapter myDb;
+	
 	private ArrayList<File> imageFiles = new ArrayList<File>();
 	private String[] imagePaths = new String[0];
-	private boolean editing = false;
 	
 	private static final int IMAGE_REQUEST_CODE = 1;
 
 	@Override protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+		myDb = DatabaseAdapter.getInstance();
 		setContentView(R.layout.create_card);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 	    
@@ -67,17 +71,15 @@ public class CardFormActivity extends Activity {
 		
 		setTitle("Add New Card to "+deckName);
 		if(imagePaths.length<1){
-			hideImageGallary();
+			hideImageGallery();
 		}
 
 		final TextView question = (TextView) this.findViewById(R.id.question_input);
 		final TextView answer = (TextView) this.findViewById(R.id.answer_input);
-		
+		hideImageGallery();
 		if(cardId > 0){
 			setTitle("Edit Card in "+deckName);
-			editing  = true;
-			QueryRunner getCard = new QueryRunner(DatabaseAdapter.getInstance());
-			getCard.setQueryRunnerListener(new QueryRunnerListener(){
+			new QueryRunner(myDb, new QueryRunnerListener(){
 				@Override public void onPostExcecute(Cursor cursor) {
 					cursor.moveToFirst();
 					String questionText = cursor.getString(0);
@@ -87,58 +89,93 @@ public class CardFormActivity extends Activity {
 					cursor.moveToPosition(-1);
 					while(cursor.moveToNext()){
 						String filename = cursor.getString(3);
-						imageFiles.add(new File(filename));
+						if(filename != null){
+							imageFiles.add(new File(filename));
+						}
 					}
-					showImageGallary();
+					if(imageFiles.size()>0){
+						showImageGallery();
+					}
 				}
-			});
-			getCard.execute(QueryString.getCardWithPhotosQuery(cardId));
+			}).execute(QueryString.getCardWithPhotosQuery(cardId));
 		}
 		findViewById(R.id.create_card).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v){
 				String question_text = question.getText().toString();
 				String answer_text = answer.getText().toString();
 				if(question_text.length()>0 && answer_text.length()>0){
-					final String[] absPaths = new String[imageFiles.size()];
-					int absPathIdx = 0; 
-					if(imageFiles.size()>0){
-						/*MOVE ALL THE PHOTO FILES TO APP DIRECTORY
-						 ******************************************/
-						String newFilePath = getApplicationContext().getFilesDir()+"/";
-						for(File imageFile: imageFiles){
-							String imageFileName = imageFile.getName();
-							String imageFileExt = imageFileName.substring(imageFileName.lastIndexOf("."));
-							String newFileName = Long.toString(System.currentTimeMillis())+imageFileExt;
-							File newImageFile = new File(newFilePath+newFileName);
-							Log.d(TAG, newImageFile.getAbsolutePath());
-							try{
-								copy(imageFile,newImageFile);
-								absPaths[absPathIdx++] = newImageFile.getAbsolutePath();
-							}catch(Exception e){
-								Log.e(TAG, "unable to copy files");
-							}
-						}
-					}
-					QueryRunner createCard = new QueryRunner(DatabaseAdapter.getInstance());
-					createCard.setQueryRunnerListener(new QueryRunnerListener(){
-						@Override public void onPostExcecute(Cursor cards) {
-							if(absPaths.length>0){
-								/*ADD PHOTOS TO DATABASE
-								 ***********************/
-								QueryRunner addImagesToLatestCard = new QueryRunner(DatabaseAdapter.getInstance());
-								addImagesToLatestCard.setQueryRunnerListener(new QueryRunnerListener(){
-									@Override public void onPostExcecute(Cursor cursor) {
-										backToParentActivity();
-									}
-								});
-								addImagesToLatestCard.execute(QueryString.getCreatePhotoForLatestCardQuery(absPaths));
-							}else{
+					if(cardId == 0){
+						//ITS A NEW CARD
+						new QueryRunner(myDb,new QueryRunnerListener(){
+							@Override public void onPostExcecute(Cursor cards){
+								String[] absPaths = copyImageFiles();
+								if(absPaths.length>0){
+									new QueryRunner(myDb).execute(QueryString.getCreatePhotoForLatestCardQuery(absPaths));
+								}
 								backToParentActivity();
 							}
-						}
-					});
-					createCard.execute(QueryString.getCreateCardQuery(question_text,answer_text,deckId));
+						}).execute(QueryString.getCreateCardQuery(question_text,answer_text,deckId));					
+					}else{
+						//UPDATE EXISTING CARD
+						new QueryRunner(myDb).execute(QueryString.getUpdateCardQuery(cardId, question_text, answer_text));
+						//UPDATE CARD'S PHOTOS
+						new QueryRunner(myDb, new QueryRunnerListener(){
+							@Override public void onPostExcecute(Cursor cursor) {
+								//get existing file paths from db.
+								//store file paths in imageFiles
+								//remove db photo entries
+								//copy imageFiles to new path
+								//delete old photos
+								//add new paths to db.
+								//update card.
+								final String[] existingPhotoFiles = new String[cursor.getCount()];
+								if(cursor.getCount() > 0){
+									//remove all traces of existing card photos
+									cursor.moveToPosition(-1);
+									while(cursor.moveToNext()){
+										String filename = cursor.getString(3);
+										existingPhotoFiles[cursor.getPosition()] = filename;
+										imageFiles.add(new File(filename));
+									}
+									new QueryRunner(myDb)
+										.execute(QueryString.getDeletePhotosWithFilenamesQuery(existingPhotoFiles));
+								}
+								String[] absPaths = copyImageFiles();
+								HashSet<String> filePaths = new HashSet<String>(Arrays.asList(existingPhotoFiles));
+								MainActivity.unlinkedFiles(getApplicationContext(), filePaths);
+								if(absPaths.length>0){
+									new QueryRunner(myDb).execute(QueryString.getCreatePhotoForLatestCardQuery(absPaths));
+								}
+								backToParentActivity();
+							}
+						}).execute(QueryString.getCardWithPhotosQuery(cardId));
+					}
+	
 				}
+			}
+
+			/*MOVE ALL THE PHOTO FILES TO APP DIRECTORY
+			 ******************************************/
+			private String[] copyImageFiles() {
+				String[] absPaths = new String[imageFiles.size()];
+				if(imageFiles.size()>0){
+					int absPathIdx = 0; 
+					String newFilePath = getApplicationContext().getFilesDir()+"/";
+					for(File imageFile: imageFiles){
+						String imageFileName = imageFile.getName();
+						String imageFileExt = imageFileName.substring(imageFileName.lastIndexOf("."));
+						String newFileName = Long.toString(System.currentTimeMillis())+imageFileExt;
+						File newImageFile = new File(newFilePath+newFileName);
+						Log.d(TAG, newImageFile.getAbsolutePath());
+						try{
+							copy(imageFile,newImageFile);
+							absPaths[absPathIdx++] = newImageFile.getAbsolutePath();
+						}catch(Exception e){
+							Log.e(TAG, "unable to copy files");
+						}
+					}
+				}
+				return absPaths;
 			}
 		});
 		findViewById(R.id.add_images).setOnClickListener(new OnClickListener(){
@@ -155,12 +192,12 @@ public class CardFormActivity extends Activity {
 			  	case (IMAGE_REQUEST_CODE) :
 					imagePaths = data.getStringArrayExtra("com.fyodorwolf.studyBudy.imageStrings");
 					imageFiles.clear();
-					hideImageGallary();
+					hideImageGallery();
 					if(imagePaths.length>0){
 						for(String imagePath : imagePaths){
 							imageFiles.add(new File(imagePath));
 						}
-						showImageGallary();
+						showImageGallery();
 					}
 					break; 
 		  	} 
@@ -168,7 +205,7 @@ public class CardFormActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data); 
 	}
 	
-    private void hideImageGallary() {
+    private void hideImageGallery() {
     	this.findViewById(R.id.create_card_gallary_row).setVisibility(View.GONE);
 		((Button)this.findViewById(R.id.add_images)).setText("Add Images");
     }
@@ -176,12 +213,12 @@ public class CardFormActivity extends Activity {
     @Override public void onConfigurationChanged(Configuration newConfig){
     	Log.d(TAG,imagePaths.toString());
     	if(imagePaths.length>0){
-			showImageGallary();
+			showImageGallery();
 		}
     }
+    
 
-	private void showImageGallary() {
-
+	private void showImageGallery() {
 		((Button)this.findViewById(R.id.add_images)).setText("Change Images");
 		ViewGroup tableRow = (ViewGroup) this.findViewById(R.id.create_card_gallary_row);
 		tableRow.setVisibility(View.VISIBLE);
