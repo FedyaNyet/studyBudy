@@ -289,9 +289,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
             	editCardIntent.putExtra(CardFormActivity.EXTRAS_CARD_ID,  myDeckAdapter.getCurrentCard().id);
 				startActivity(editCardIntent);
             	break;
-            case R.id.card_menu_remove_current_card:
-            	deleteCard().show();
-            	break;
             case R.id.card_menu_shuffle:
             	myDeckAdapter.shuffleDeck();
             	this.nextCard();
@@ -612,37 +609,4 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
            .create();
        return myDeleteConfirmationBox;
 	}
-
-
-    /**
-     * This method deletes the current deck's card that is being viewed.
-     * @return AlertDialog confirming the deletion of a specific card
-     */
-	private AlertDialog deleteCard() {
-    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
-           //set message, title, and icon
-           .setTitle("Delete Card") 
-           .setMessage("Are you sure you want to delete this card?") 
-           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-               public void onClick(DialogInterface dialog, int whichButton) { 
-                   	dialog.dismiss();
-		           	QueryRunner deleteCardQuery = new QueryRunner(myDB);
-		           	deleteCardQuery.setQueryRunnerListener(new QueryRunnerListener(){
-		       			@Override public void onPostExcecute(Cursor cards) {
-		       				buildDeck(cards);
-		       				nextCard();
-		       			}
-		           	});
-		           	String queryString = QueryString.getDeleteCardQuery(myDeckAdapter.getCurrentCard().id);
-		           	deleteCardQuery.execute(queryString);
-               } 
-           })
-           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-               public void onClick(DialogInterface dialog, int which) {
-                   dialog.dismiss();
-               }
-           })
-           .create();
-       return myDeleteConfirmationBox;
-   }
 }

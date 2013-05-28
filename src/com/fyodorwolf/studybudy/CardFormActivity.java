@@ -22,6 +22,8 @@ import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -259,13 +261,17 @@ public class CardFormActivity extends Activity {
 	}
 	
     @Override  public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.card_form, menu);
-        return true;
+    	if(cardId>0){
+	        getMenuInflater().inflate(R.menu.card_form, menu);
+	        return true;
+    	}return false;
     }
 	
 	@Override public boolean onPrepareOptionsMenu(Menu menu){
     	menu.findItem(R.id.card_menu_remove_current_card).setVisible(false);
-    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
+    	if(cardId>0){
+        	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
+    	}
 		return true;
 	}
 
@@ -274,6 +280,9 @@ public class CardFormActivity extends Activity {
         switch (item.getItemId()) {
             case android.R.id.home:
             	backToParentActivity();
+            	break;
+            case R.id.card_menu_remove_current_card:
+            	deleteCard().show();
             	break;
         }
 		return true;
@@ -308,4 +317,38 @@ public class CardFormActivity extends Activity {
         overridePendingTransition(0,0);
         finish();
 	}
+	
+
+
+
+    /**
+     * This method deletes the current deck's card that is being viewed.
+     * @return AlertDialog confirming the deletion of a specific card
+     */
+	private AlertDialog deleteCard() {
+    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
+           //set message, title, and icon
+           .setTitle("Delete Card") 
+           .setMessage("Are you sure you want to delete this card?") 
+           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int whichButton) { 
+                   	dialog.dismiss();
+		           	QueryRunner deleteCardQuery = new QueryRunner(DatabaseAdapter.getInstance());
+		           	deleteCardQuery.setQueryRunnerListener(new QueryRunnerListener(){
+		       			@Override public void onPostExcecute(Cursor cards) {
+		       				backToParentActivity();
+		       			}
+		           	});
+		           	String queryString = QueryString.getDeleteCardQuery(cardId);
+		           	deleteCardQuery.execute(queryString);
+               } 
+           })
+           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int which) {
+                   dialog.dismiss();
+               }
+           })
+           .create();
+       return myDeleteConfirmationBox;
+   }
 }
