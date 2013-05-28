@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -255,6 +256,17 @@ public class CardFormActivity extends Activity {
 				return myImage;
 			}
 		});
+	}
+	
+    @Override  public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.card_form, menu);
+        return true;
+    }
+	
+	@Override public boolean onPrepareOptionsMenu(Menu menu){
+    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(false);
+    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
+		return true;
 	}
 
 	@Override public boolean onOptionsItemSelected(MenuItem item) {

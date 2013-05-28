@@ -187,13 +187,11 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     
     @Override public boolean onPrepareOptionsMenu(Menu menu){
     	menu.findItem(R.id.card_menu_edit_current_card).setVisible(false);
-    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(false);
     	menu.findItem(R.id.card_menu_show_previous).setVisible(false);
     	menu.findItem(R.id.card_menu_shuffle).setVisible(false);
     	menu.findItem(R.id.card_menu_reset).setVisible(false);
     	if(this.myDeckAdapter.getDeckCount()>0){
         	menu.findItem(R.id.card_menu_edit_current_card).setVisible(true);
-        	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
         	menu.findItem(R.id.card_menu_reset).setVisible(true);
         	if(this.myDeckAdapter.getDeckCount()>1){
             	menu.findItem(R.id.card_menu_show_previous).setVisible(true);
