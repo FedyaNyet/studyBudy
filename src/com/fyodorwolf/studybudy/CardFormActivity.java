@@ -28,8 +28,10 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -47,6 +49,8 @@ import android.widget.TextView;
 
 public class CardFormActivity extends Activity {
 
+	
+	public static final int ACTIVITY_SELECT_IMAGE = 7777;
 	public static final String TAG = "CardFormActivity";
 	public static final String EXTRAS_CARD_ID = "com.fyodorwolf.studyBudy.cardId";
 	
@@ -185,6 +189,8 @@ public class CardFormActivity extends Activity {
 			@Override public void onClick(View v) {
 				Intent multiSelect = new Intent(CardFormActivity.this, MultiPhotoSelectActivity.class);
 				startActivityForResult(multiSelect,IMAGE_REQUEST_CODE);
+//				Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+//				startActivityForResult(i, IMAGE_REQUEST_CODE); 
 			}
 		});
 	}
@@ -202,6 +208,17 @@ public class CardFormActivity extends Activity {
 						}
 						showImageGallery();
 					}
+////SELECT SINGLE PHOTO
+//		            Uri selectedImage = data.getData();
+//		            String[] filePathColumn = {MediaStore.Images.Media.DATA};
+//		            Cursor cursor = getContentResolver().query(
+//		                               selectedImage, filePathColumn, null, null, null);
+//		            cursor.moveToFirst();
+//		            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+//		            String filePath = cursor.getString(columnIndex);
+//		            cursor.close();
+//		            Bitmap yourSelectedImage = BitmapFactory.decodeFile(filePath);
+//		            Log.d(TAG,filePath);
 					break; 
 		  	} 
 		}

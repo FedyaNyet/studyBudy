@@ -11,21 +11,6 @@
 	android:background="@drawable/linen_bg">
 	
     <!-- Editext for Search -->
-
-    <EditText
-        android:id="@+id/edit_text"
-        android:layout_width="match_parent"
-        android:layout_height="41dp"
-        android:background="@android:color/black"
-        android:ems="10"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:hint="@string/search_hint"
-        android:imeOptions="actionSearch"
-        android:inputType="textFilter"
-        android:paddingLeft="@dimen/search_padding_left"
-        android:textColorHint="@android:color/white"
-        android:textColor="@android:color/white" />
  
     <!-- List View -->
     <ExpandableListView

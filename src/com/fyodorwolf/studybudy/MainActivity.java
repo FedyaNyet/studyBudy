@@ -25,7 +25,9 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MenuItem.OnActionExpandListener;
 import android.view.View;
+import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -35,6 +37,8 @@ import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ListView;
+import android.widget.SearchView;
+import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 
 public class MainActivity extends ExpandableListActivity{
@@ -44,59 +48,23 @@ public class MainActivity extends ExpandableListActivity{
 	private boolean editing = false;
 	private boolean deleting = false;
 	private boolean searching = false;
-	private EditText searchBox;
 	private DatabaseAdapter myDB;
 	private ExpandableListView listView;
 	
 	private ArrayList<Section> _sections = new ArrayList<Section>();
 	private HashMap<Long,Section> _sectionIdMap = new HashMap<Long,Section>();
 	private ExpandableListAdapter _listViewAdapter;
-    		
+	
     @Override protected void onCreate(Bundle savedInstanceState) {
         // define main views.
-    	Log.d(TAG,"started");
 		setContentView(R.layout.list_view);
 	    getActionBar().setDisplayHomeAsUpEnabled(false);
 	    
-        //define the local views to be used
-    	searchBox = (EditText) this.findViewById(R.id.edit_text);
-	    searchBox.getBackground().setAlpha(95);
     	listView = this.getExpandableListView();
 		myDB = DatabaseAdapter.getInstance();
 
 		/* SHOW ALL SECTIONS AND DECKS */
     	preformNormalSearch();
-    	
-    	/* SET ACTION LISTENERS */
-    	searchBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-    	    @Override
-    	    public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
-    	        if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                        actionId == EditorInfo.IME_ACTION_DONE ||
-                        event.getAction() == KeyEvent.ACTION_DOWN &&
-                        event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-    	        	String searchString = textView.getText().toString();
-    	        	if(searchString.isEmpty()){
-    	        		searching = false;
-    	            	preformNormalSearch();
-    	        	}else{
-    	        		searching = true;
-                    	QueryRunner sectionsQuery = new QueryRunner(myDB);
-                        sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
-                			@Override public void onPostExcecute(Cursor cards) {
-                				gotSections(cards);
-                            	listView.requestFocus();
-                            	InputMethodManager in = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                            	in.hideSoftInputFromWindow(searchBox.getWindowToken(), 0);
-                			}
-                		});
-                        sectionsQuery.execute(QueryString.getSearchTermQuery(searchString));
-    	        	}
-                    return true;
-    	        }
-    	        return false;
-    	    }
-    	});
     	
 		listView.setOnChildClickListener(new OnChildClickListener(){
 			@Override public boolean onChildClick(ExpandableListView parent, View child, int groupIdx, int childIdx, long deckId) {
@@ -132,24 +100,55 @@ public class MainActivity extends ExpandableListActivity{
         
         super.onCreate(savedInstanceState);
     }
-    
-    private void preformNormalSearch() {  
-       	/* RUN QUERY ON ANOTHER THREAD */
-    	QueryRunner sectionsQuery = new QueryRunner(myDB);
-        sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
-			@Override public void onPostExcecute(Cursor cards) {
-				gotSections(cards);
-			}
-		});
-        sectionsQuery.execute(QueryString.getGroupedDeckQuery());
-	}
 
 	@Override public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.section, menu);
+        final MenuItem searchItem = menu.findItem(R.id.menu_search);
+        searchItem.setOnActionExpandListener(new OnActionExpandListener() {
+            @Override public boolean onMenuItemActionCollapse(MenuItem item) {
+                Log.d(TAG,"close");
+                return true;  // Return true to collapse action view
+            }
+            @Override public boolean onMenuItemActionExpand(MenuItem item) {
+                Log.d(TAG,"open");
+                return true;  // Return true to expand action view
+            }
+        });
+        final SearchView searchView = (SearchView)searchItem.getActionView();
+		searchView.setOnQueryTextListener(new OnQueryTextListener(){
+			@Override public boolean onQueryTextSubmit(String query) {
+				return onQueryTextChange(query);
+			}
+			@Override public boolean onQueryTextChange(String newText) {
+				Log.d(TAG,"text:"+newText);
+				if(newText == "" || newText.isEmpty()){
+	                searchView.setIconified(true);
+					searchView.clearFocus();
+				}
+				return preformStringSearch(newText);
+			}
+		});
         return true;
     }
-
-    @Override public boolean onPrepareOptionsMenu(Menu menu){
+	
+	private boolean preformStringSearch(String searchString){
+    	if(searchString.isEmpty()){
+    		searching = false;
+        	preformNormalSearch();
+    	}else{
+    		searching = true;
+        	QueryRunner sectionsQuery = new QueryRunner(myDB);
+            sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
+    			@Override public void onPostExcecute(Cursor cards) {
+    				gotSections(cards);
+    			}
+    		});
+            sectionsQuery.execute(QueryString.getSearchTermQuery(searchString));
+    	}
+        return true;
+	}
+	
+	@Override public boolean onPrepareOptionsMenu(Menu menu){
     	if(editing){
     		menu.findItem(R.id.main_menu_edit_deck).setVisible(false);
     		menu.findItem(R.id.main_menu_edit_list).setVisible(false);
@@ -200,39 +199,57 @@ public class MainActivity extends ExpandableListActivity{
     	return true;
     }
     
-    private void runCreateDeckActivity(long deckId) {
-    	Intent createDeckIntent = new Intent(MainActivity.this,DeckFormActivity.class);
-    	createDeckIntent.setFlags(
-			Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
-            Intent.FLAG_ACTIVITY_NO_ANIMATION
-        );
-    	String[] sectionNames = new String[_sections.size()];
-    	long[] sectionIds = new long[_sections.size()];
-    	for(int idx = 0; idx < _sections.size(); idx++){
-    		sectionNames[idx] = _sections.get(idx).name;
-    		sectionIds[idx] = _sections.get(idx).id;
-    	}
-    	createDeckIntent.putExtra(DeckFormActivity.EXTRAS_SECTION_IDS, sectionIds);
-    	createDeckIntent.putExtra(DeckFormActivity.EXTRAS_SECTION_NAMES, sectionNames);
-    	if(deckId > 0){
-    		createDeckIntent.putExtra(DeckFormActivity.EXTRAS_EDITING_DECK_ID, deckId);
-    	}
-    	startActivity(createDeckIntent);
-	}
-
 	@Override public void onStart(){
     	listView.requestFocus();
         super.onStart();
     }
     
-    private void doneEditing(){
-    	deleting = false;
-    	editing = false;
-        this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-        this.listView.setItemsCanFocus(true);
-        listView.setAdapter(_listViewAdapter);
-        expandListView();
-    }
+	public static void unlinkedFiles(Context context, HashSet<String> filePaths){
+		String appDir = context.getFilesDir()+"/";
+		File[] files =  new File(appDir).listFiles();
+		for(File file : files){
+			String existingFilePath = file.getAbsolutePath();
+			if(!filePaths.contains(existingFilePath)){
+				file.delete();
+			}
+		}
+	}
+    
+	
+	protected static void deleteAssociationsForDeckIds(Context context, long[] deckIds) {
+		final DatabaseAdapter myDB = DatabaseAdapter.getInstance();
+		final Context myContext = context;
+		//get all deck photo files.
+	   	new QueryRunner(myDB, new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cursor) {
+				if(cursor.getCount()>0){
+					int size = cursor.getCount();
+					long[] cardIds = new long[size];
+					String[] photoFilenames = new String[size];
+					HashSet<String> photoPathsInDB = new HashSet<String>();
+					cursor.moveToPosition(-1);
+					while(cursor.moveToNext()){
+						String filename = cursor.getString(1);
+						long cardId = cursor.getLong(2);
+						cardIds[cursor.getPosition()] = cardId;
+						photoFilenames[cursor.getPosition()] = filename;
+						photoPathsInDB.add(filename);
+					}
+					
+					/*DELETE PHOTO IN PHOTOIDS[]*/
+					new QueryRunner(myDB)
+						.execute(QueryString.getDeletePhotosWithFilenamesQuery(photoFilenames));
+					
+					/*DELETE CARD IN CARDIDS[]*/
+					new QueryRunner(myDB).execute(QueryString.getDeleteCardsQuery(cardIds));
+
+					/*DELETE FILES THAT DON'T HAVE DB ENTRIES*/
+					unlinkedFiles(myContext, photoPathsInDB);
+				}
+				
+			}
+	   	}).execute(QueryString.getCardsWithPhotosForDecksQuery(deckIds));
+	}
 
     protected void gotSections(Cursor result) {
     	_sections = new ArrayList<Section>();
@@ -315,16 +332,37 @@ public class MainActivity extends ExpandableListActivity{
 		expandListView();
 	}
     
-    public void expandListView(){
+
+    
+    
+    private void expandListView(){
 		listView.setAdapter(_listViewAdapter);
 		int count = listView.getExpandableListAdapter().getGroupCount();
 		for (int position = 0; position < count; position++)
 		    listView.expandGroup(position);
     }
     
-
+    private void preformNormalSearch() {  
+       	/* RUN QUERY ON ANOTHER THREAD */
+    	QueryRunner sectionsQuery = new QueryRunner(myDB);
+        sectionsQuery.setQueryRunnerListener(new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cards) {
+				gotSections(cards);
+			}
+		});
+        sectionsQuery.execute(QueryString.getGroupedDeckQuery());
+	}
     
-    private AlertDialog deleteDecks() {
+    private void doneEditing(){
+    	deleting = false;
+    	editing = false;
+        this.listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        this.listView.setItemsCanFocus(true);
+        listView.setAdapter(_listViewAdapter);
+        expandListView();
+    }
+    
+	private AlertDialog deleteDecks() {
     	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
     	//set message, title, and icon
     		.setTitle("Delete Card") 
@@ -362,50 +400,25 @@ public class MainActivity extends ExpandableListActivity{
 			.create();
     	return myDeleteConfirmationBox;
    }
-
-	protected static void deleteAssociationsForDeckIds(Context context, long[] deckIds) {
-		final DatabaseAdapter myDB = DatabaseAdapter.getInstance();
-		final Context myContext = context;
-		//get all deck photo files.
-	   	new QueryRunner(myDB, new QueryRunnerListener(){
-			@Override public void onPostExcecute(Cursor cursor) {
-				if(cursor.getCount()>0){
-					int size = cursor.getCount();
-					long[] cardIds = new long[size];
-					String[] photoFilenames = new String[size];
-					HashSet<String> photoPathsInDB = new HashSet<String>();
-					cursor.moveToPosition(-1);
-					while(cursor.moveToNext()){
-						String filename = cursor.getString(1);
-						long cardId = cursor.getLong(2);
-						cardIds[cursor.getPosition()] = cardId;
-						photoFilenames[cursor.getPosition()] = filename;
-						photoPathsInDB.add(filename);
-					}
-					
-					/*DELETE PHOTO IN PHOTOIDS[]*/
-					new QueryRunner(myDB)
-						.execute(QueryString.getDeletePhotosWithFilenamesQuery(photoFilenames));
-					
-					/*DELETE CARD IN CARDIDS[]*/
-					new QueryRunner(myDB).execute(QueryString.getDeleteCardsQuery(cardIds));
-
-					/*DELETE FILES THAT DON'T HAVE DB ENTRIES*/
-					unlinkedFiles(myContext, photoPathsInDB);
-				}
-				
-			}
-	   	}).execute(QueryString.getCardsWithPhotosForDecksQuery(deckIds));
+	
+    private void runCreateDeckActivity(long deckId) {
+    	Intent createDeckIntent = new Intent(MainActivity.this,DeckFormActivity.class);
+    	createDeckIntent.setFlags(
+			Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
+            Intent.FLAG_ACTIVITY_NO_ANIMATION
+        );
+    	String[] sectionNames = new String[_sections.size()];
+    	long[] sectionIds = new long[_sections.size()];
+    	for(int idx = 0; idx < _sections.size(); idx++){
+    		sectionNames[idx] = _sections.get(idx).name;
+    		sectionIds[idx] = _sections.get(idx).id;
+    	}
+    	createDeckIntent.putExtra(DeckFormActivity.EXTRAS_SECTION_IDS, sectionIds);
+    	createDeckIntent.putExtra(DeckFormActivity.EXTRAS_SECTION_NAMES, sectionNames);
+    	if(deckId > 0){
+    		createDeckIntent.putExtra(DeckFormActivity.EXTRAS_EDITING_DECK_ID, deckId);
+    	}
+    	startActivity(createDeckIntent);
 	}
-    
-	public static void unlinkedFiles(Context context, HashSet<String> filePaths){
-		String appDir = context.getFilesDir()+"/";
-		File[] files =  new File(appDir).listFiles();
-		for(File file : files){
-			String existingFilePath = file.getAbsolutePath();
-			if(!filePaths.contains(existingFilePath)){
-				file.delete();
-			}
-		}
-	}
+
 }
