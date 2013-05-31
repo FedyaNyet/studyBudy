@@ -32,6 +32,7 @@ import android.widget.GridView;
 import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 /**
  * This Activity bridges the gap that doesn't allow
@@ -45,6 +46,7 @@ public class MultiPhotoSelectActivity extends Activity {
 
 	public final String TAG = MultiPhotoSelectActivity.class.getSimpleName();
     public static final String RESULT_BUNDLE_INDENTIFIER = "com.fyodorwolf.studyBudy.imageStrings";
+	private static final String KEY_TEMP_IMAGE = "TAKEN_TEMP_IMAGE";
 	private static final int PICTURE_RESULT = 2;
  
     private ArrayList<String> _imageUrls;
@@ -71,18 +73,29 @@ public class MultiPhotoSelectActivity extends Activity {
         super.onOptionsItemSelected(item);
         switch (item.getItemId()) {
             case R.id.camera:
-            	try {
-                	String fileName = DateFormat.getDateTimeInstance().format(new Date());
-            	    ContentValues values = new ContentValues();
-            	    values.put(MediaStore.Images.Media.TITLE, fileName);
-            	    Uri newImageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-            	    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            	    intent.putExtra(MediaStore.EXTRA_OUTPUT, newImageUri);
-            	    startActivityForResult(intent, PICTURE_RESULT);
-            	} catch (Exception e) {
-            	    Log.e(TAG,e.getStackTrace().toString());
-            	}
-            	break;
+
+
+        		Date now = new Date();
+            	String fileName = DateFormat.getDateTimeInstance().format(now);
+            	long dateTaken = now.getTime();
+            	
+            	ContentValues image = new ContentValues();
+        	    image.put(MediaStore.Images.Media.TITLE, fileName);
+        	    image.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+        	    image.put(MediaStore.Images.Media.DESCRIPTION, fileName);
+        	    image.put(MediaStore.Images.Media.DATE_ADDED, dateTaken);
+        	    image.put(MediaStore.Images.Media.DATE_TAKEN, dateTaken);
+        	    image.put(MediaStore.Images.Media.DATE_MODIFIED, dateTaken);
+        	    image.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+        	    image.put(MediaStore.Images.Media.ORIENTATION, 0);
+        	    //creates empty File for image to be stored to.
+        	    Uri myUri =  getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, image);
+            	
+        	    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        	    intent.putExtra(MediaStore.EXTRA_OUTPUT, myUri);
+        	    intent.putExtra(MediaStore.MEDIA_IGNORE_FILENAME, myUri);
+        	    startActivityForResult(intent, PICTURE_RESULT);
+        	    break;
         }
         return true;
     }
@@ -97,15 +110,15 @@ public class MultiPhotoSelectActivity extends Activity {
 	private void setImages(){
 
         /*FETCH MEDIA*/
-        final String[] columns = { MediaStore.Images.Media.DATA, MediaStore.Images.Media._ID };
+        final String[] columns = { MediaStore.Images.Media.DATA};
         Cursor imagecursor = this.getContentResolver().query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, null, null, MediaStore.Images.Media.DATE_TAKEN+" DESC"
         );
  
         /*SET GRIDVIEW ADAPTER*/
         this._imageUrls = new ArrayList<String>();
-        for (int i = 0; i < imagecursor.getCount(); i++) {
-            imagecursor.moveToPosition(i);
+        imagecursor.moveToPosition(-1);
+        while (imagecursor.moveToNext()) {
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
             _imageUrls.add(imagecursor.getString(dataColumnIndex));
         }
@@ -128,6 +141,10 @@ public class MultiPhotoSelectActivity extends Activity {
         
 	}
 	
+	
+/*************************************************************************
+ * THIS ADAPTER IS USED TO SET THE CONTENT OF THE GRID VIEW FOR THIS VIEW.
+ *************************************************************************/
     public class ImageAdapter extends BaseAdapter {
  
         ArrayList<String> mList;
@@ -165,11 +182,13 @@ public class MultiPhotoSelectActivity extends Activity {
             if(convertView == null) {
                 convertView = mInflater.inflate(R.layout.row_multiphoto_item, null);
             }
- 
             final CheckBox mCheckBox = (CheckBox) convertView.findViewById(R.id.checkBox1);
             final ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView1);
  
             _imageLoader.displayImage("file://"+_imageUrls.get(position), imageView, null, new SimpleImageLoadingListener() {
+            	@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+            		Log.d(TAG, failReason.toString());
+            	}
             	@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage){
                     Animation anim = AnimationUtils.loadAnimation(MultiPhotoSelectActivity.this, android.R.anim.fade_in);
                     imageView.setAnimation(anim);
