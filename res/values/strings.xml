@@ -17,6 +17,7 @@
     <string name="card_menu_show_previous">Show Previous Card</string>
     <string name="card_menu_reset">Reset Answers</string>
     <string name="card_menu_shuffle">Shuff Deck</string>
+    <string name="camera">Camera</string>
     <string name="search">Search</string>
     <string name="search_hint">Search&#8230;</string>
     <string name="deck_name">Deck Name</string> 

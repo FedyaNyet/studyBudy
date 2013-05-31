@@ -1,15 +1,9 @@
 package com.fyodorwolf.studybudy;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
 import com.fyodorwolf.studybudy.db.QueryRunner;
@@ -28,10 +22,8 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -44,7 +36,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class CardFormActivity extends Activity {
@@ -53,18 +44,16 @@ public class CardFormActivity extends Activity {
 	public static final int ACTIVITY_SELECT_IMAGE = 7777;
 	public static final String TAG = "CardFormActivity";
 	public static final String EXTRAS_CARD_ID = "com.fyodorwolf.studyBudy.cardId";
-	
-	long cardId;
-	long deckId;
-	String deckName;
-	LinearLayout gallery;
-	
-	DatabaseAdapter myDb;
+
+	private static final int IMAGE_REQUEST_CODE = 1;
 	
 	private ArrayList<File> imageFiles = new ArrayList<File>();
 	private String[] imagePaths = new String[0];
 	
-	private static final int IMAGE_REQUEST_CODE = 1;
+	private long cardId;
+	private long deckId;
+	private String deckName;
+	private DatabaseAdapter myDb;
 
 	@Override protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -128,13 +117,6 @@ public class CardFormActivity extends Activity {
 						//UPDATE CARD'S PHOTOS
 						new QueryRunner(myDb, new QueryRunnerListener(){
 							@Override public void onPostExcecute(Cursor cursor) {
-								//get existing file paths from db.
-								//store file paths in imageFiles
-								//remove db photo entries
-								//copy imageFiles to new path
-								//delete old photos
-								//add new paths to db.
-								//update card.
 								final String[] existingPhotoFiles = new String[cursor.getCount()];
 								if(cursor.getCount() > 0){
 									//remove all traces of existing card photos
@@ -149,7 +131,7 @@ public class CardFormActivity extends Activity {
 								}
 								String[] absPaths = copyImageFiles();
 								HashSet<String> filePaths = new HashSet<String>(Arrays.asList(existingPhotoFiles));
-								MainActivity.unlinkedFiles(getApplicationContext(), filePaths);
+								SBApplication.removeFiles(filePaths);
 								if(absPaths.length>0){
 									new QueryRunner(myDb).execute(QueryString.getCreatePhotoForLatestCardQuery(absPaths));
 								}
@@ -175,7 +157,7 @@ public class CardFormActivity extends Activity {
 						File newImageFile = new File(newFilePath+newFileName);
 						Log.d(TAG, newImageFile.getAbsolutePath());
 						try{
-							copy(imageFile,newImageFile);
+							SBApplication.copy(imageFile,newImageFile);
 							absPaths[absPathIdx++] = newImageFile.getAbsolutePath();
 						}catch(Exception e){
 							Log.e(TAG, "unable to copy files");
@@ -225,11 +207,6 @@ public class CardFormActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data); 
 	}
 	
-    private void hideImageGallery() {
-    	this.findViewById(R.id.create_card_gallary_row).setVisibility(View.GONE);
-		((Button)this.findViewById(R.id.add_images)).setText("Add Images");
-    }
-    
     @Override public void onConfigurationChanged(Configuration newConfig){
     	Log.d(TAG,imagePaths.toString());
     	if(imagePaths.length>0){
@@ -237,6 +214,78 @@ public class CardFormActivity extends Activity {
 		}
     }
     
+
+	@Override  public boolean onCreateOptionsMenu(Menu menu) {
+    	if(cardId>0){
+	        getMenuInflater().inflate(R.menu.card_form, menu);
+	        return true;
+    	}return false;
+    }
+	
+	@Override public boolean onPrepareOptionsMenu(Menu menu){
+    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(false);
+    	if(cardId>0){
+        	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
+    	}
+		return true;
+	}
+
+	@Override public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case android.R.id.home:
+            	backToParentActivity();
+            	break;
+            case R.id.card_menu_remove_current_card:
+            	deleteCard().show();
+            	break;
+        }
+		return true;
+    }
+    
+    private void backToParentActivity() {
+        Intent parentActivityIntent = new Intent(this, DeckActivity.class);
+        parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
+        parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckName",  deckName);
+        parentActivityIntent.addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(parentActivityIntent);
+        overridePendingTransition(0,0);
+        finish();
+	}
+	
+
+    /**
+     * This method deletes the current deck's card that is being viewed.
+     * @return AlertDialog confirming the deletion of a specific card
+     */
+	private AlertDialog deleteCard() {
+    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
+           //set message, title, and icon
+           .setTitle("Delete Card") 
+           .setMessage("Are you sure you want to delete this card?") 
+           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int whichButton) { 
+                   	dialog.dismiss();
+		           	QueryRunner deleteCardQuery = new QueryRunner(DatabaseAdapter.getInstance());
+		           	deleteCardQuery.setQueryRunnerListener(new QueryRunnerListener(){
+		       			@Override public void onPostExcecute(Cursor cards) {
+		       				backToParentActivity();
+		       			}
+		           	});
+		           	String queryString = QueryString.getDeleteCardQuery(cardId);
+		           	deleteCardQuery.execute(queryString);
+               } 
+           })
+           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+               public void onClick(DialogInterface dialog, int which) {
+                   dialog.dismiss();
+               }
+           })
+           .create();
+       return myDeleteConfirmationBox;
+   }
 
 	private void showImageGallery() {
 		((Button)this.findViewById(R.id.add_images)).setText("Change Images");
@@ -276,96 +325,9 @@ public class CardFormActivity extends Activity {
 			}
 		});
 	}
-	
-    @Override  public boolean onCreateOptionsMenu(Menu menu) {
-    	if(cardId>0){
-	        getMenuInflater().inflate(R.menu.card_form, menu);
-	        return true;
-    	}return false;
-    }
-	
-	@Override public boolean onPrepareOptionsMenu(Menu menu){
-    	menu.findItem(R.id.card_menu_remove_current_card).setVisible(false);
-    	if(cardId>0){
-        	menu.findItem(R.id.card_menu_remove_current_card).setVisible(true);
-    	}
-		return true;
+
+	private void hideImageGallery() {
+		this.findViewById(R.id.create_card_gallary_row).setVisibility(View.GONE);
+		((Button)this.findViewById(R.id.add_images)).setText("Add Images");
 	}
-
-	@Override public boolean onOptionsItemSelected(MenuItem item) {
-        super.onOptionsItemSelected(item);
-        switch (item.getItemId()) {
-            case android.R.id.home:
-            	backToParentActivity();
-            	break;
-            case R.id.card_menu_remove_current_card:
-            	deleteCard().show();
-            	break;
-        }
-		return true;
-    }
-    
-    public void copy(File src, File dst) throws IOException {
-		if (!dst.getParentFile().exists() && !dst.getParentFile().mkdirs()){
-			Log.d(TAG,"Unable to create:" + dst.getParentFile());
-		}
-        InputStream mInput = new FileInputStream(src);
-        OutputStream mOutput = new FileOutputStream(dst);
-        byte[] mBuffer = new byte[1024];
-        int mLength;
-        while ((mLength = mInput.read(mBuffer))>0)
-        {
-            mOutput.write(mBuffer, 0, mLength);
-        }
-        mOutput.flush();
-        mOutput.close();
-        mInput.close();
-    }
-
-    
-	private void backToParentActivity() {
-        Intent parentActivityIntent = new Intent(this, DeckActivity.class);
-        parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
-        parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckName",  deckName);
-        parentActivityIntent.addFlags(
-                Intent.FLAG_ACTIVITY_CLEAR_TOP |
-                Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(parentActivityIntent);
-        overridePendingTransition(0,0);
-        finish();
-	}
-	
-
-
-
-    /**
-     * This method deletes the current deck's card that is being viewed.
-     * @return AlertDialog confirming the deletion of a specific card
-     */
-	private AlertDialog deleteCard() {
-    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
-           //set message, title, and icon
-           .setTitle("Delete Card") 
-           .setMessage("Are you sure you want to delete this card?") 
-           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-               public void onClick(DialogInterface dialog, int whichButton) { 
-                   	dialog.dismiss();
-		           	QueryRunner deleteCardQuery = new QueryRunner(DatabaseAdapter.getInstance());
-		           	deleteCardQuery.setQueryRunnerListener(new QueryRunnerListener(){
-		       			@Override public void onPostExcecute(Cursor cards) {
-		       				backToParentActivity();
-		       			}
-		           	});
-		           	String queryString = QueryString.getDeleteCardQuery(cardId);
-		           	deleteCardQuery.execute(queryString);
-               } 
-           })
-           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-               public void onClick(DialogInterface dialog, int which) {
-                   dialog.dismiss();
-               }
-           })
-           .create();
-       return myDeleteConfirmationBox;
-   }
 }

@@ -1,16 +1,25 @@
 package com.fyodorwolf.studybudy;
  
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
  
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -38,6 +47,7 @@ public class MultiPhotoSelectActivity extends Activity {
 
 	public final String TAG = MultiPhotoSelectActivity.class.getSimpleName();
     public static final String RESULT_BUNDLE_INDENTIFIER = "com.fyodorwolf.studyBudy.imageStrings";
+	private static final int PICTURE_RESULT = 2;
  
     private ArrayList<String> _imageUrls;
     private ImageAdapter _imageAdapter;
@@ -49,7 +59,45 @@ public class MultiPhotoSelectActivity extends Activity {
         /*VIEW SETUP & INSTANTIATION*/
         setContentView(R.layout.ac_image_grid);
         setTitle("Select Card Images");
- 
+        
+        setImages();
+    }
+
+	@Override public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.photo_select, menu);
+		return true;
+	}
+	
+
+    @Override public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.camera:
+            	try {
+                	String fileName = DateFormat.getDateTimeInstance().format(new Date());
+            	    ContentValues values = new ContentValues();
+            	    values.put(MediaStore.Images.Media.TITLE, fileName);
+            	    Uri newImageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            	    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            	    intent.putExtra(MediaStore.EXTRA_OUTPUT, newImageUri);
+            	    startActivityForResult(intent, PICTURE_RESULT);
+            	} catch (Exception e) {
+            	    Log.e(TAG,e.getStackTrace().toString());
+            	}
+            	break;
+        }
+        return true;
+    }
+
+	@Override public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == PICTURE_RESULT)
+            if (resultCode == Activity.RESULT_OK) {
+            	setImages();
+            }
+    }
+    
+	private void setImages(){
+
         /*FETCH MEDIA*/
         final String[] columns = { MediaStore.Images.Media.DATA, MediaStore.Images.Media._ID };
         Cursor imagecursor = this.getContentResolver().query(
@@ -63,6 +111,7 @@ public class MultiPhotoSelectActivity extends Activity {
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
             _imageUrls.add(imagecursor.getString(dataColumnIndex));
         }
+        imagecursor.close();
         _imageAdapter = new ImageAdapter(this, _imageUrls);
         ((GridView)findViewById(R.id.gridview)).setAdapter(_imageAdapter);
         
@@ -79,8 +128,8 @@ public class MultiPhotoSelectActivity extends Activity {
 			}
         });
         
-    }
-    
+	}
+	
     public class ImageAdapter extends BaseAdapter {
  
         ArrayList<String> mList;
