@@ -145,9 +145,9 @@ public class MultiPhotoSelectActivity extends Activity {
 	}
 	
 	
-/*************************************************************************
- * THIS ADAPTER IS USED TO SET THE CONTENT OF THE GRID VIEW FOR THIS VIEW.
- *************************************************************************/
+/*******************************************************************************
+ * THIS ADAPTER IS USED TO SET THE CONTENT OF THE GRID VIEW FOR THIS ACTIVITY. *
+ *******************************************************************************/
     public class ImageAdapter extends BaseAdapter {
  
         ArrayList<String> mList;
