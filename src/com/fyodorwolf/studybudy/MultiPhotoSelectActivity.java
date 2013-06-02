@@ -1,14 +1,11 @@
 package com.fyodorwolf.studybudy;
  
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
  
 import android.app.Activity;
-import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -16,9 +13,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -59,7 +54,6 @@ public class MultiPhotoSelectActivity extends Activity {
     
     private ArrayList<String> _imageUrls;
     private ImageAdapter _imageAdapter;
-	private Uri temp_image_uri;
  
     @Override  public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,8 +76,6 @@ public class MultiPhotoSelectActivity extends Activity {
         super.onOptionsItemSelected(item);
         switch (item.getItemId()) {
             case R.id.camera:
-//
-//
         		Date now = new Date();
             	String fileName = DateFormat.getDateTimeInstance().format(now);
             	long dateTaken = now.getTime();
@@ -103,16 +95,6 @@ public class MultiPhotoSelectActivity extends Activity {
         	    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         	    intent.putExtra(MediaStore.EXTRA_OUTPUT, taken_image_uri);
         	    startActivityForResult(intent, CONTENT_REQUEST);
-
-//            	File fileDir= Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-//            	String fileName = DateFormat.getDateTimeInstance().format(new Date());
-//            	File myFile = new File(fileDir, fileName);
-//            	temp_image_uri = Uri.fromFile(myFile);
-//            	
-//            	
-//            	Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//            	i.putExtra(MediaStore.EXTRA_OUTPUT, temp_image_uri);
-//            	startActivityForResult(i, CONTENT_REQUEST);
         	    break;
         }
         return true;
@@ -121,14 +103,6 @@ public class MultiPhotoSelectActivity extends Activity {
 	@Override public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		if (requestCode == CONTENT_REQUEST)
             if (resultCode == Activity.RESULT_OK) {
-            	
-//        	    creates empty File for image to be stored to.
-//        	    Uri galleryImage =  getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
-//    	    	
-//        	    File dstFile = new File(galleryImage.getPath());
-//    	    	File srcFile = new File(temp_image_uri.getPath());
-//    	    	srcFile.renameTo(dstFile);
-        	    	
             	setImages();
             }
     }
@@ -148,6 +122,7 @@ public class MultiPhotoSelectActivity extends Activity {
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
             String uri = imagecursor.getString(dataColumnIndex);
             if ((new File(uri)).exists())
+            	//For some reason, a blank image could be still registered in the MediaStore cache.
             	_imageUrls.add(uri);
         }
         imagecursor.close();
