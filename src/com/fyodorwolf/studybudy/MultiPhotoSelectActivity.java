@@ -6,14 +6,17 @@ import java.util.ArrayList;
 import java.util.Date;
  
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -45,15 +48,15 @@ import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 public class MultiPhotoSelectActivity extends Activity {
 
 	public final String TAG = MultiPhotoSelectActivity.class.getSimpleName();
-	
     public static final String RESULT_BUNDLE_INDENTIFIER = "com.fyodorwolf.studyBudy.imageStrings";
-	
-    private static final int CONTENT_REQUEST = 2;
 
+    private static final String KEY_SHARED_PREFS_IMAGE = "com.fyodorwolf.studyBudy.taken_image_uri";
+    private static final int CONTENT_REQUEST = 2;
     private ImageLoader _imageLoader = ImageLoader.getInstance();
-    
     private ArrayList<String> _imageUrls;
     private ImageAdapter _imageAdapter;
+    private String taken_image_uri_string = null;
+	private boolean gotCameraPhoto = false;
  
     @Override  public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,10 +94,11 @@ public class MultiPhotoSelectActivity extends Activity {
         	    image.put(MediaStore.Images.Media.ORIENTATION, 0);
         	    //creates empty File for image to be stored to.
         	    Uri taken_image_uri =  getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, image);
-            	
+        	    taken_image_uri_string = taken_image_uri.toString();
         	    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         	    intent.putExtra(MediaStore.EXTRA_OUTPUT, taken_image_uri);
         	    startActivityForResult(intent, CONTENT_REQUEST);
+            	gotCameraPhoto = false;
         	    break;
         }
         return true;
@@ -103,16 +107,48 @@ public class MultiPhotoSelectActivity extends Activity {
 	@Override public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		if (requestCode == CONTENT_REQUEST)
             if (resultCode == Activity.RESULT_OK) {
+            	gotCameraPhoto = true;
             	setImages();
             }
     }
 	
+	@Override public void onPause(){
+		super.onPause();
+		if(taken_image_uri_string != null){;
+			this.getPreferences(MODE_PRIVATE).edit().putString(KEY_SHARED_PREFS_IMAGE,taken_image_uri_string).commit();
+		}
+	}
+	
+	@Override public void onStart(){
+		super.onStart();
+		String uriString = this.getPreferences(MODE_PRIVATE).getString(KEY_SHARED_PREFS_IMAGE, null);
+		if(!gotCameraPhoto && uriString != null){
+			//didn't end up getting a photo, but hanging references exist...
+			//delete savePreference
+			this.getPreferences(MODE_PRIVATE).edit().remove(KEY_SHARED_PREFS_IMAGE).commit();
+			//delete the contentResolver's reference.
+			getContentResolver().delete(Uri.parse(uriString), null, null);
+			//delete file with matching uri.
+			Cursor cur = getContentResolver().query(Uri.parse(uriString),new String[]{MediaStore.MediaColumns.DATA}, null, null, null);
+			if(cur != null && cur.moveToFirst()){
+				File oldFile = new File(cur.getString(0));
+				if(oldFile.exists()){
+					oldFile.delete(); 
+				}
+			}
+			cur.close();
+		}
+	}
+	
 	private void setImages(){
 
         /*FETCH MEDIA*/
-        final String[] columns = { MediaStore.Images.Media.DATA};
         Cursor imagecursor = this.getContentResolver().query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, null, null, MediaStore.Images.Media.DATE_TAKEN+" DESC"
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, 	//matching URI
+            new String[] { MediaStore.Images.Media.DATA}, 	//columns
+            null, 											//filter
+            null, 											//filterArgs
+            MediaStore.Images.Media.DATE_TAKEN+" DESC" 		//orderBy
         );
  
         /*SET GRIDVIEW ADAPTER*/
@@ -122,7 +158,7 @@ public class MultiPhotoSelectActivity extends Activity {
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
             String uri = imagecursor.getString(dataColumnIndex);
             if ((new File(uri)).exists())
-            	//For some reason, a blank image could be still registered in the MediaStore cache.
+            	//a blank image reference could be still registered in the MediaStore.
             	_imageUrls.add(uri);
         }
         imagecursor.close();
