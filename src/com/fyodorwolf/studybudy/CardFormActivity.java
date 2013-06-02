@@ -244,7 +244,7 @@ public class CardFormActivity extends Activity {
     }
     
     private void backToParentActivity() {
-        Intent parentActivityIntent = new Intent(this, DeckActivity.class);
+        Intent parentActivityIntent = new Intent(this, CardsActivity.class);
         parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckId", deckId);
         parentActivityIntent.putExtra("com.fyodorwolf.studyBudy.deckName",  deckName);
         parentActivityIntent.addFlags(

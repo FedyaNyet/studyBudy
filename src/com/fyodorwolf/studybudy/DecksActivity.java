@@ -34,7 +34,7 @@ import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 
-public class MainActivity extends ExpandableListActivity{
+public class DecksActivity extends ExpandableListActivity{
 
 	public static final String TAG = "MainActivity";
 	
@@ -69,11 +69,11 @@ public class MainActivity extends ExpandableListActivity{
 					boolean curCheckState = ((CheckedTextView)child).isChecked();
 					_listView.setItemChecked(position, !curCheckState);
 				}else{
-					Intent deckIntent = new Intent(MainActivity.this,DeckActivity.class);
+					Intent deckIntent = new Intent(DecksActivity.this,CardsActivity.class);
 					deckIntent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
 	                            		Intent.FLAG_ACTIVITY_NO_ANIMATION);
-					deckIntent.putExtra(DeckActivity.EXTRAS_DECK_ID, deckId);
-					deckIntent.putExtra(DeckActivity.EXTRAS_DECK_NAME, ((TextView)child.findViewById(android.R.id.text1)).getText());
+					deckIntent.putExtra(CardsActivity.EXTRAS_DECK_ID, deckId);
+					deckIntent.putExtra(CardsActivity.EXTRAS_DECK_NAME, ((TextView)child.findViewById(android.R.id.text1)).getText());
 					Deck clickedDeck = _sections.get(groupIdx).getDeckById(deckId);
 					if(_searching && clickedDeck.cards.size()>0){
 						//build an array of card id's to show in the next activity...
@@ -83,7 +83,7 @@ public class MainActivity extends ExpandableListActivity{
 							cardIds[cardIdIdx] = searchCard.id;
 							cardIdIdx++;
 						}
-						deckIntent.putExtra(DeckActivity.EXTRAS_CARD_IDS, cardIds);
+						deckIntent.putExtra(CardsActivity.EXTRAS_CARD_IDS, cardIds);
 					}
 					startActivity(deckIntent);
 				}
@@ -338,7 +338,7 @@ public class MainActivity extends ExpandableListActivity{
     				long[] deckIds = _listView.getCheckedItemIds();
     				
     				/*DELETE THE PHOTOS, CARDS AND FILES OF THIS DECK*/
-    				MainActivity.deleteAssociationsForDeckIds(MainActivity.this,deckIds);
+    				DecksActivity.deleteAssociationsForDeckIds(DecksActivity.this,deckIds);
     				
     				/*DELETE ACTUAL DECK*/
     				new QueryRunner(_myDB, new QueryRunnerListener(){
@@ -368,7 +368,7 @@ public class MainActivity extends ExpandableListActivity{
    }
 	
     private void runCreateDeckActivity(long deckId) {
-    	Intent createDeckIntent = new Intent(MainActivity.this,DeckFormActivity.class);
+    	Intent createDeckIntent = new Intent(DecksActivity.this,DeckFormActivity.class);
     	createDeckIntent.setFlags(
 			Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
             Intent.FLAG_ACTIVITY_NO_ANIMATION

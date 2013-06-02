@@ -42,7 +42,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.support.v4.view.ViewPager;
 
-public class DeckActivity extends Activity implements ViewPager.PageTransformer {
+public class CardsActivity extends Activity implements ViewPager.PageTransformer {
 
 	public static final String TAG = "ListActivity";
 	public static final String EXTRAS_DECK_ID = "com.fyodorwolf.studyBudy.deckId";
@@ -258,7 +258,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
         super.onOptionsItemSelected(item);
         switch (item.getItemId()){
             case android.R.id.home:
-                Intent parentActivityIntent = new Intent(this, MainActivity.class);
+                Intent parentActivityIntent = new Intent(this, DecksActivity.class);
                 parentActivityIntent.addFlags(
                     Intent.FLAG_ACTIVITY_NO_ANIMATION|
                     Intent.FLAG_ACTIVITY_CLEAR_TOP |
@@ -269,7 +269,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
                 finish();
             	break;
             case R.id.card_menu_add_new_card:
-            	Intent createCardIntent = new Intent(DeckActivity.this,CardFormActivity.class);
+            	Intent createCardIntent = new Intent(CardsActivity.this,CardFormActivity.class);
             	createCardIntent.setFlags(
 					Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
                     Intent.FLAG_ACTIVITY_NO_ANIMATION
@@ -279,7 +279,7 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
 				startActivity(createCardIntent);
             	break;
             case R.id.card_menu_edit_current_card:
-            	Intent editCardIntent = new Intent(DeckActivity.this,CardFormActivity.class);
+            	Intent editCardIntent = new Intent(CardsActivity.this,CardFormActivity.class);
             	editCardIntent.setFlags(
 					Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP|
                     Intent.FLAG_ACTIVITY_NO_ANIMATION
@@ -553,7 +553,6 @@ public class DeckActivity extends Activity implements ViewPager.PageTransformer 
     private void setGalleryForTableRow(View tableRow,Card card) {
     	tableRow.setVisibility(View.GONE);
     	if(card.photos.size()>0){
-
     		tableRow.setVisibility(View.VISIBLE);
     		final ArrayList<Photo> galleryItems = card.photos;
     		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);

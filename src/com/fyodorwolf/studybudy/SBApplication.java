@@ -12,12 +12,6 @@ import android.app.Application;
 import android.content.Context;
 import android.util.Log;
 
-import com.fyodorwolf.studybudy.db.DatabaseAdapter;
-import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-
 public class SBApplication extends Application {
  
     private static Context context;
@@ -25,26 +19,6 @@ public class SBApplication extends Application {
     @Override public void onCreate() {
         super.onCreate();
         SBApplication.context = getApplicationContext();
- 
-        //  ImageLoaderConfiguration.createDefault(this);
-        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this)
-            .threadPoolSize(3)
-            .threadPriority(Thread.NORM_PRIORITY - 2)
-            .memoryCacheSize(1500000) // 1.5 Mb
-            .denyCacheImageMultipleSizesInMemory()
-            .discCacheFileNameGenerator(new Md5FileNameGenerator())
-//          .enableLogging() // Not necessary in common
-            .defaultDisplayImageOptions(
-        		new DisplayImageOptions.Builder()
-		            .showStubImage(R.drawable.gallary_default)
-		            .showImageForEmptyUri(R.drawable.gallary_error)
-		            .cacheInMemory()
-		            .cacheOnDisc()
-		            .build()
-            )
-            .build();
-        ImageLoader.getInstance().init(config);
-        DatabaseAdapter.getInstance().init(this);
     }
 
 	public static void copy(File src, File dst) throws IOException {
