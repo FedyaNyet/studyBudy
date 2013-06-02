@@ -4,9 +4,9 @@
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	android:background="@drawable/linen_bg">
-	<include android:id="@+id/card_front" layout="@layout/card_front" />
-	<include android:id="@+id/card_back" layout="@layout/card_back" />
-	<include android:id="@+id/animated_card_front" layout="@layout/card_front" />
+	<include android:id="@+id/card_front" layout="@layout/card_view_front" />
+	<include android:id="@+id/card_back" layout="@layout/card_view_back" />
+	<include android:id="@+id/animated_card_front" layout="@layout/card_view_front" />
 
 	<RelativeLayout
 	    android:id="@+id/card_actions"

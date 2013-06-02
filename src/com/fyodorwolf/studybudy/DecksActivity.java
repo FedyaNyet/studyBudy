@@ -50,7 +50,7 @@ public class DecksActivity extends ExpandableListActivity{
 	
     @Override protected void onCreate(Bundle savedInstanceState) {
         // define main views.
-		setContentView(R.layout.list_view);
+		setContentView(R.layout.decks_listview);
 	    getActionBar().setDisplayHomeAsUpEnabled(false);
 	    
     	_listView = this.getExpandableListView();

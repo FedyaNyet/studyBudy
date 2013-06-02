@@ -562,7 +562,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     			@Override public long getItemId(int position) {return galleryItems.get(position).id;}
     			@Override public View getView(int position, View convertView, ViewGroup parent) {
     				final Photo myPhoto = galleryItems.get(position);
-    				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.galley_photo_item,null);
+    				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
     				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
     				Log.d(TAG,"---"+Integer.toString(position)+"	"+Long.toString(myPhoto.id)+"	"+myPhoto.filename);
     				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){

@@ -58,7 +58,7 @@ public class CardFormActivity extends Activity {
 	@Override protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
 		myDb = DatabaseAdapter.getInstance();
-		setContentView(R.layout.create_card);
+		setContentView(R.layout.card_form);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 	    
 		deckId =  getIntent().getExtras().getLong("com.fyodorwolf.studyBudy.deckId");
@@ -311,7 +311,7 @@ public class CardFormActivity extends Activity {
 			@Override public long getItemId(int position) {return galleryItems.get(position).id;}
 			@Override public View getView(int position, View convertView, ViewGroup parent) {
 				final Photo myPhoto = galleryItems.get(position);
-				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.galley_photo_item,null);
+				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
 				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
 				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){
 					@Override public void onLoadingStarted(String imageUri, View view) {}

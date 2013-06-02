@@ -46,7 +46,7 @@ public class DeckFormActivity extends Activity{
 	TableRow groupNameRow;
 	
 	@Override protected void onCreate(Bundle savedInstanceState){
-		setContentView(R.layout.create_deck);
+		setContentView(R.layout.deck_form);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 		setTitle("Create New Deck");
 		

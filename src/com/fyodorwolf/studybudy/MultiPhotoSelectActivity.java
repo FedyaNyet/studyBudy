@@ -60,7 +60,7 @@ public class MultiPhotoSelectActivity extends Activity {
 
         
         /*VIEW SETUP & INSTANTIATION*/
-        setContentView(R.layout.ac_image_grid);
+        setContentView(R.layout.photo_select_gridview);
         setTitle("Select Card Images");
         
         setImages();
@@ -216,7 +216,7 @@ public class MultiPhotoSelectActivity extends Activity {
  
         @Override public View getView(final int position, View convertView, ViewGroup parent) {
             if(convertView == null) {
-                convertView = mInflater.inflate(R.layout.row_multiphoto_item, null);
+                convertView = mInflater.inflate(R.layout.photo_select_item, null);
             }
             final CheckBox mCheckBox = (CheckBox) convertView.findViewById(R.id.checkBox1);
             final ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView1);
