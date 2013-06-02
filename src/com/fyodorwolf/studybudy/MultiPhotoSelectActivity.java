@@ -1,10 +1,14 @@
 package com.fyodorwolf.studybudy;
  
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
  
 import android.app.Activity;
+import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +16,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseBooleanArray;
@@ -45,16 +50,20 @@ import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 public class MultiPhotoSelectActivity extends Activity {
 
 	public final String TAG = MultiPhotoSelectActivity.class.getSimpleName();
+	
     public static final String RESULT_BUNDLE_INDENTIFIER = "com.fyodorwolf.studyBudy.imageStrings";
-	private static final String KEY_TEMP_IMAGE = "TAKEN_TEMP_IMAGE";
-	private static final int PICTURE_RESULT = 2;
- 
+	
+    private static final int CONTENT_REQUEST = 2;
+
+    private ImageLoader _imageLoader = ImageLoader.getInstance();
+    
     private ArrayList<String> _imageUrls;
     private ImageAdapter _imageAdapter;
-    private ImageLoader _imageLoader = ImageLoader.getInstance();
+	private Uri temp_image_uri;
  
     @Override  public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         
         /*VIEW SETUP & INSTANTIATION*/
         setContentView(R.layout.ac_image_grid);
@@ -73,8 +82,8 @@ public class MultiPhotoSelectActivity extends Activity {
         super.onOptionsItemSelected(item);
         switch (item.getItemId()) {
             case R.id.camera:
-
-
+//
+//
         		Date now = new Date();
             	String fileName = DateFormat.getDateTimeInstance().format(now);
             	long dateTaken = now.getTime();
@@ -89,24 +98,41 @@ public class MultiPhotoSelectActivity extends Activity {
         	    image.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
         	    image.put(MediaStore.Images.Media.ORIENTATION, 0);
         	    //creates empty File for image to be stored to.
-        	    Uri myUri =  getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, image);
+        	    Uri taken_image_uri =  getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, image);
             	
         	    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        	    intent.putExtra(MediaStore.EXTRA_OUTPUT, myUri);
-        	    intent.putExtra(MediaStore.MEDIA_IGNORE_FILENAME, myUri);
-        	    startActivityForResult(intent, PICTURE_RESULT);
+        	    intent.putExtra(MediaStore.EXTRA_OUTPUT, taken_image_uri);
+        	    startActivityForResult(intent, CONTENT_REQUEST);
+
+//            	File fileDir= Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+//            	String fileName = DateFormat.getDateTimeInstance().format(new Date());
+//            	File myFile = new File(fileDir, fileName);
+//            	temp_image_uri = Uri.fromFile(myFile);
+//            	
+//            	
+//            	Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//            	i.putExtra(MediaStore.EXTRA_OUTPUT, temp_image_uri);
+//            	startActivityForResult(i, CONTENT_REQUEST);
         	    break;
         }
         return true;
     }
 
-	@Override public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == PICTURE_RESULT)
+	@Override public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+		if (requestCode == CONTENT_REQUEST)
             if (resultCode == Activity.RESULT_OK) {
+            	
+//        	    creates empty File for image to be stored to.
+//        	    Uri galleryImage =  getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
+//    	    	
+//        	    File dstFile = new File(galleryImage.getPath());
+//    	    	File srcFile = new File(temp_image_uri.getPath());
+//    	    	srcFile.renameTo(dstFile);
+        	    	
             	setImages();
             }
     }
-    
+	
 	private void setImages(){
 
         /*FETCH MEDIA*/
@@ -120,7 +146,9 @@ public class MultiPhotoSelectActivity extends Activity {
         imagecursor.moveToPosition(-1);
         while (imagecursor.moveToNext()) {
             int dataColumnIndex = imagecursor.getColumnIndex(MediaStore.Images.Media.DATA);
-            _imageUrls.add(imagecursor.getString(dataColumnIndex));
+            String uri = imagecursor.getString(dataColumnIndex);
+            if ((new File(uri)).exists())
+            	_imageUrls.add(uri);
         }
         imagecursor.close();
         _imageAdapter = new ImageAdapter(this, _imageUrls);
@@ -187,9 +215,10 @@ public class MultiPhotoSelectActivity extends Activity {
  
             _imageLoader.displayImage("file://"+_imageUrls.get(position), imageView, null, new SimpleImageLoadingListener() {
             	@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
-            		Log.d(TAG, failReason.toString());
+//            		Log.d(TAG, "Broke: "+ imageUri);
             	}
             	@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage){
+//                    Log.d(TAG, "Loaded: "+imageUri);
                     Animation anim = AnimationUtils.loadAnimation(MultiPhotoSelectActivity.this, android.R.anim.fade_in);
                     imageView.setAnimation(anim);
                     anim.start();
