@@ -71,10 +71,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" >
 
-            <com.fyodorwolf.studybudy.ui.HorizontalListView
-                android:id="@+id/photo_list_view"
-                android:layout_width="match_parent"
-                android:layout_height="150dp" />
+      		<include
+   		    	android:layout_width="wrap_content"
+   		    	android:layout_height="wrap_content"
+				layout="@layout/photo_listview" />
 
         </TableRow>
 
