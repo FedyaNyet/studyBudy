@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">StudyBudy</string>
+    <string name="mascot">Tutor</string>
     <string name="main_menu_new_deck">New Deck</string>
     <string name="main_menu_edit_deck">Edit a Deck</string>
     <string name="main_menu_edit_list">Delete Decks</string>
