@@ -171,8 +171,6 @@ public class CardFormActivity extends Activity {
 			@Override public void onClick(View v) {
 				Intent multiSelect = new Intent(CardFormActivity.this, MultiPhotoSelectActivity.class);
 				startActivityForResult(multiSelect,IMAGE_REQUEST_CODE);
-//				Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-//				startActivityForResult(i, IMAGE_REQUEST_CODE); 
 			}
 		});
 	}
@@ -190,17 +188,6 @@ public class CardFormActivity extends Activity {
 						}
 						showImageGallery();
 					}
-////SELECT SINGLE PHOTO
-//		            Uri selectedImage = data.getData();
-//		            String[] filePathColumn = {MediaStore.Images.Media.DATA};
-//		            Cursor cursor = getContentResolver().query(
-//		                               selectedImage, filePathColumn, null, null, null);
-//		            cursor.moveToFirst();
-//		            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-//		            String filePath = cursor.getString(columnIndex);
-//		            cursor.close();
-//		            Bitmap yourSelectedImage = BitmapFactory.decodeFile(filePath);
-//		            Log.d(TAG,filePath);
 					break; 
 		  	} 
 		}
