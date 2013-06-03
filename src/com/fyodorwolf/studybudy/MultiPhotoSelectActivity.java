@@ -222,11 +222,7 @@ public class MultiPhotoSelectActivity extends Activity {
             final ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView1);
  
             _imageLoader.displayImage("file://"+_imageUrls.get(position), imageView, null, new SimpleImageLoadingListener() {
-            	@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
-//            		Log.d(TAG, "Broke: "+ imageUri);
-            	}
             	@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage){
-//                    Log.d(TAG, "Loaded: "+imageUri);
                     Animation anim = AnimationUtils.loadAnimation(MultiPhotoSelectActivity.this, android.R.anim.fade_in);
                     imageView.setAnimation(anim);
                     anim.start();

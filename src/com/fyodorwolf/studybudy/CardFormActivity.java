@@ -24,6 +24,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -86,6 +87,7 @@ public class CardFormActivity extends Activity {
 					while(cursor.moveToNext()){
 						String filename = cursor.getString(3);
 						if(filename != null){
+							Log.d(TAG,"stored: "+filename);
 							imageFiles.add(new File(filename));
 						}
 					}
@@ -139,7 +141,6 @@ public class CardFormActivity extends Activity {
 							}
 						}).execute(QueryString.getCardWithPhotosQuery(cardId));
 					}
-	
 				}
 			}
 
@@ -184,6 +185,7 @@ public class CardFormActivity extends Activity {
 					hideImageGallery();
 					if(imagePaths.length>0){
 						for(String imagePath : imagePaths){
+							Log.d(TAG,"received:"+imagePath);
 							imageFiles.add(new File(imagePath));
 						}
 						showImageGallery();
@@ -288,7 +290,8 @@ public class CardFormActivity extends Activity {
 				Photo myPhoto = galleryItems.get(position);
 				Intent intent = new Intent();
 				intent.setAction(android.content.Intent.ACTION_VIEW); 
-				intent.setDataAndType(Uri.parse("file://"+myPhoto.filename),"image/*");
+				Log.d(TAG,"new: "+myPhoto.filename);
+				intent.setDataAndType(Uri.fromFile(new File(myPhoto.filename)),"image/*");
 				startActivity(intent);
 			}
 		});

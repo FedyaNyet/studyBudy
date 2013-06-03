@@ -1,5 +1,6 @@
 package com.fyodorwolf.studybudy;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
@@ -14,6 +15,7 @@ import com.fyodorwolf.studybudy.ui.HorizontalListView;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
+import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -21,6 +23,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -35,11 +38,13 @@ import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
 import android.support.v4.view.ViewPager;
 
 public class CardsActivity extends Activity implements ViewPager.PageTransformer {
@@ -380,7 +385,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 			
 			myDeckAdapter.incrementIndex();
 			Card myCard = myDeckAdapter.getCurrentCard();
-			Log.d(TAG,"currentCard: "+myCard.toString());
+//			Log.d(TAG,"currentCard: "+myCard.toString());
 			
 			CharSequence newQuestion = myCard.question;
 			int newStatus = myCard.getResourceStatusImage();
@@ -484,7 +489,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     	myDeckAdapter.clear();
 		if(result.getCount()>0){
 	    	result.moveToPosition(-1);
-			Log.d(TAG,"cardId	   photoId		photoFileName");
+//			Log.d(TAG,"cardId	   photoId		photoFileName");
 			while(result.moveToNext()){
 				long cardId = result.getLong(0);
 				String cardQuestion = result.getString(1);
@@ -503,7 +508,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 					Integer photoOrderNum = result.getInt(7);
 					Photo newPhoto = new Photo(photoId,photoFileName,photoOrderNum);
 					myCard.photos.add(newPhoto);
-					Log.d(TAG, Long.toString(cardId)+"	"+Long.toString(photoId)+"	"+photoFileName);
+//					Log.d(TAG, Long.toString(cardId)+"	"+Long.toString(photoId)+"	"+photoFileName);
 				}
 			}
 			setViewForCard(myDeckAdapter.getCurrentCard());
@@ -550,25 +555,36 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 		
     }
     
-    private void setGalleryForTableRow(View tableRow,Card card) {
+    private void setGalleryForTableRow(View tableRow,final Card card) {
     	tableRow.setVisibility(View.GONE);
     	if(card.photos.size()>0){
     		tableRow.setVisibility(View.VISIBLE);
-    		final ArrayList<Photo> galleryItems = card.photos;
     		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
+    		for(File photo : new File(getApplicationContext().getFilesDir()+"/").listFiles()){
+    			Log.d(TAG,"photo:" + photo.getAbsolutePath());
+    		}
+    		gallery.setOnItemClickListener(new OnItemClickListener(){
+    			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    				Log.d(TAG, "clicked");
+    				Photo myPhoto = card.photos.get(position);
+    				File photoFile = new File(myPhoto.filename);
+    				Log.d(TAG,"exists: "+ photoFile.exists()+" file:"+photoFile.getAbsolutePath());
+    				Intent intent = new Intent(Intent.ACTION_VIEW);
+    				intent.setDataAndType(Uri.fromFile(photoFile),"image/*");
+    				intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+    				startActivity(intent);
+    			}
+    		});
     		gallery.setAdapter(new BaseAdapter(){
-    			@Override public int getCount() { return galleryItems.size();}
-    			@Override public Object getItem(int position) {return galleryItems.get(position);}
-    			@Override public long getItemId(int position) {return galleryItems.get(position).id;}
+    			@Override public int getCount() { return card.photos.size();}
+    			@Override public Object getItem(int position) {return card.photos.get(position);}
+    			@Override public long getItemId(int position) {return card.photos.get(position).id;}
     			@Override public View getView(int position, View convertView, ViewGroup parent) {
-    				final Photo myPhoto = galleryItems.get(position);
+    				final Photo myPhoto = card.photos.get(position);
     				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
     				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-    				Log.d(TAG,"---"+Integer.toString(position)+"	"+Long.toString(myPhoto.id)+"	"+myPhoto.filename);
-    				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){
-    					@Override public void onLoadingStarted(String imageUri, View view) {}
-    					@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {}
-    					@Override public void onLoadingCancelled(String imageUri, View view) {}
+    				Log.d(TAG,"exists: "+ new File(myPhoto.filename).exists()+" "+Uri.fromFile(new File(myPhoto.filename)).toString());
+    				ImageLoader.getInstance().displayImage(Uri.fromFile(new File(myPhoto.filename)).toString(), myImage,new SimpleImageLoadingListener(){
     					@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
     						((ImageView)view).setImageBitmap(loadedImage);
     					}
