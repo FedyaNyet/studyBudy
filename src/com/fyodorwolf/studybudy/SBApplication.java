@@ -8,12 +8,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashSet;
 
+import org.apache.commons.io.FileUtils;
+
 import android.app.Application;
 import android.content.Context;
 import android.util.Log;
 
 public class SBApplication extends Application {
- 
+	
+    private final static String TAG = "SBApplication";
     private static Context context;
 	
     @Override public void onCreate() {
@@ -37,7 +40,17 @@ public class SBApplication extends Application {
 	    mOutput.close();
 	    mInput.close();
 	}
-
+	
+	
+	public static void removeFiles(File directory){
+		try {
+			Log.d(TAG, "deleteing files from: "+directory.getAbsolutePath());
+			FileUtils.deleteDirectory(directory);
+		} catch (IOException e) {
+			Log.e(TAG,e.getMessage());
+		}
+	}
+	
 	public static void removeFiles(HashSet<String> filePaths){
 		String appDir = getAppContext().getFilesDir()+"/";
 		File[] files =  new File(appDir).listFiles();
@@ -47,6 +60,8 @@ public class SBApplication extends Application {
 				file.delete();
 			}
 		}
+		
+		
 	}
 
     public static Context getAppContext() {
