@@ -117,7 +117,6 @@ public class CardFormActivity extends Activity {
 			showCardGallery();
 		}
     }
-    
 
 	@Override  public boolean onCreateOptionsMenu(Menu menu) {
     	if(cardId>0){
@@ -199,14 +198,17 @@ public class CardFormActivity extends Activity {
 		String answer_text = answer.getText().toString();
 		if(question_text.length()>0 && answer_text.length()>0){
 			final QueryRunnerListener handlePhotoesCallback = new QueryRunnerListener(){
-				@Override public void onPostExcecute(Cursor unusedCursor){
+				@Override public void onPostExcecute(Cursor cursor){
+					if(cursor.getCount()>0){
+						//JUST CREATED THE CARD.
+						cardId = cursor.getLong(0);
+					}
 					//MOVE ALL IMAGES TO CARD DIRECTORY
 					if(imageFiles.size()>0){
 						String newFilePath = getApplicationContext().getFilesDir()+"/"+cardId+"/";
 						for(File imageFile : imageFiles){
-							String imageFileExt = imageFile.getName().substring(imageFile.getName().lastIndexOf(".")); //contains leading '.'
-							String newFileName = Long.toString(System.currentTimeMillis())+imageFileExt;
-							File newImageFile = new File(newFilePath + newFileName + imageFileExt);
+							String newFileName = Long.toString(System.currentTimeMillis());
+							File newImageFile = new File(newFilePath + newFileName);
 							try{
 								SBApplication.copy(imageFile,newImageFile);
 								Log.d(TAG, "copied: "+newImageFile.getAbsolutePath());
