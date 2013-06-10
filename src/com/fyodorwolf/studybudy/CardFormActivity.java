@@ -76,6 +76,7 @@ public class CardFormActivity extends Activity {
 		hideImageGallery();
 		if(cardId > 0){
 			setTitle("Edit Card in "+deckName);
+			((Button)findViewById(R.id.create_card)).setText("Save Card");
 			new QueryRunner(myDb, new QueryRunnerListener(){
 				@Override public void onPostExcecute(Cursor cursor) {
 					cursor.moveToFirst();
@@ -119,21 +120,20 @@ public class CardFormActivity extends Activity {
 						//UPDATE CARD'S PHOTOS
 						new QueryRunner(myDb, new QueryRunnerListener(){
 							@Override public void onPostExcecute(Cursor cursor) {
-								final String[] existingPhotoFiles = new String[cursor.getCount()];
 								if(cursor.getCount() > 0){
 									//remove all traces of existing card photos
+									final String[] existingPhotoFiles = new String[cursor.getCount()];
 									cursor.moveToPosition(-1);
 									while(cursor.moveToNext()){
 										String filename = cursor.getString(3);
 										existingPhotoFiles[cursor.getPosition()] = filename;
-										imageFiles.add(new File(filename));
+//										imageFiles.add(new File(filename));
 									}
-									new QueryRunner(myDb)
-										.execute(QueryString.getDeletePhotosWithFilenamesQuery(existingPhotoFiles));
+									HashSet<String> filePaths = new HashSet<String>(Arrays.asList(existingPhotoFiles));
+									SBApplication.removeFiles(filePaths);
+									new QueryRunner(myDb).execute(QueryString.getDeletePhotosWithFilenamesQuery(existingPhotoFiles));
 								}
 								String[] absPaths = copyImageFiles();
-								HashSet<String> filePaths = new HashSet<String>(Arrays.asList(existingPhotoFiles));
-								SBApplication.removeFiles(filePaths);
 								if(absPaths.length>0){
 									new QueryRunner(myDb).execute(QueryString.getCreatePhotoForLatestCardQuery(absPaths));
 								}

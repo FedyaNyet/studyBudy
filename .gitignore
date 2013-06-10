@@ -18,3 +18,9 @@ local.properties
 # Eclipse project files
 #.classpath
 #.project
+
+#MAC OSX directory file.
+ .DS_Store
+libs/.DS_Store
+
+.DS_Store

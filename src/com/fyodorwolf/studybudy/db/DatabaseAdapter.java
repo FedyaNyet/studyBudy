@@ -93,7 +93,7 @@ public class DatabaseAdapter
 		    return mCur;
 		}
 		catch (SQLException mSQLException){
-		     Log.e(TAG, "getCursor >>"+ mSQLException.toString());
+		     Log.d(TAG, "getCursor >>"+ mSQLException.toString());
 	         throw mSQLException;
 		}
     }

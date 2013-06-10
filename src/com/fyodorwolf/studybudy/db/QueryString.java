@@ -1,31 +1,10 @@
 package com.fyodorwolf.studybudy.db;
 
+import org.apache.commons.lang3.*;
+
 public class QueryString {
 
 	private QueryString(){};
-	
-	public static String join(String[] array){
-		return join(array,",");
-	}
-	public static String join(String[] array, String delimiter){
-		String ids = "";
-		for(String deckId : array){
-			ids += "\""+deckId+"\""+delimiter;
-		}
-		return ids.substring(0,ids.length()-1);
-	}
-	
-	public static String join(long[] array){
-		return join(array,",");
-	}
-	
-	public static String join(long[] array,String delimiter){
-		String ids = "";
-		for(long deckId : array){
-			ids += deckId+delimiter;
-		}
-		return ids.substring(0,ids.length()-1);
-	}
 	
 	public static String getSearchTermQuery(String term){
 		return 
@@ -55,7 +34,7 @@ public class QueryString {
 	}
 
 	public static String getUpdateCardQuery(long cardId, String question_text, String answer_text) {
-		return null;
+		return "UPDATE Card SET answer = \"" + answer_text + "\", question = \""+ question_text + "\" WHERE _id = " + cardId;
 	}
 
 	public static String getDeleteCardQuery(long cardId){
@@ -64,12 +43,11 @@ public class QueryString {
 	}
 
 	public static String getDeleteCardsQuery(long[] cardIds) {
-		// TODO Auto-generated method stub
-		return "DELETE FROM Card WHERE _id IN ("+join(cardIds)+")";
+		return "DELETE FROM Card WHERE _id IN ("+ StringUtils.join(cardIds,",")+")";
 	}
 
 	public static String getCardsWithIdsQuery(long[] cardIds) {
-		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WHERE c._id IN ("+join(cardIds)+")";
+		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WHERE c._id IN ("+StringUtils.join(cardIds,",")+")";
 	}
 	
 	public static String getCardsWithDeckIdQuery(long DeckId){
@@ -100,14 +78,14 @@ public class QueryString {
 	}
 
 	public static String getDeletePhotosWithFilenamesQuery(String[] photoNames) {
-		return "DELETE FROM Photo WHERE filename IN ("+join(photoNames)+")";
+		return "DELETE FROM Photo WHERE filename IN ("+StringUtils.join(photoNames,",")+")";
 	}
 	
 	public static String getCardsWithPhotosForDecksQuery(long[] deckIds) {
 		return 	"SELECT p._id, p.filename, c._id FROM Deck d " +
 				"LEFT OUTER JOIN Card c on c.deckId = d._id " +
 				"LEFT OUTER JOIN Photo p on p.cardId = c._id " +
-				"WHERE d._id IN("+join(deckIds)+")";
+				"WHERE d._id IN("+StringUtils.join(deckIds,",")+")";
 	}
 
 	public static String getLastCardIdQuery() {
@@ -163,7 +141,7 @@ public class QueryString {
 	}
 
 	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
-		return "DELETE FROM Deck WHERE _id IN ("+join(deckIds)+")";
+		return "DELETE FROM Deck WHERE _id IN ("+StringUtils.join(deckIds,",")+")";
 	}
 	
 	public static String getRemoveEmptySectionsQuery(){
