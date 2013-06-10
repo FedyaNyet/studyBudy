@@ -97,6 +97,7 @@ public class DecksActivity extends ExpandableListActivity{
 	@Override public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.section, menu);
         final SearchView searchView = (SearchView)menu.findItem(R.id.menu_search).getActionView();
+        searchView.setQueryHint("Search StudyBudy");
 		searchView.setOnQueryTextListener(new OnQueryTextListener(){
 			@Override public boolean onQueryTextSubmit(String query) {
 				return onQueryTextChange(query);
