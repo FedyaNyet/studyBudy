@@ -116,7 +116,7 @@ public class DatabaseAdapter
 		{
 		    super(context, DB_NAME, null, 1);// 1? its Database Version
 		    DB_PATH = context.getFilesDir() + "/../databases/";
-		    Log.d(TAG,DB_PATH);
+//		    Log.d(TAG,DB_PATH);
 		    this.mContext = context;
 		}  
 
