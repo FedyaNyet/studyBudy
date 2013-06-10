@@ -5,11 +5,5 @@
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="lib" path="libs/universal-image-loader-1.8.4-with-sources.jar"/>
-	<classpathentry kind="lib" path="/Users/fyodorwolf/Desktop/commons-lang3-3.1/commons-lang3-3.1-tests.jar"/>
-	<classpathentry kind="lib" path="/Users/fyodorwolf/Desktop/commons-lang3-3.1/commons-lang3-3.1.jar" sourcepath="/Users/fyodorwolf/Desktop/commons-lang3-3.1/commons-lang3-3.1-sources.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/Users/fyodorwolf/Desktop/commons-lang3-3.1/commons-lang3-3.1-javadoc.jar!/"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
