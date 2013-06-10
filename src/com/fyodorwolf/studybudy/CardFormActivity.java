@@ -2,15 +2,12 @@ package com.fyodorwolf.studybudy;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
 import com.fyodorwolf.studybudy.db.QueryRunner;
 import com.fyodorwolf.studybudy.db.QueryString;
 import com.fyodorwolf.studybudy.db.QueryRunner.QueryRunnerListener;
-import com.fyodorwolf.studybudy.models.Photo;
 import com.fyodorwolf.studybudy.ui.HorizontalListView;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
@@ -25,7 +22,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -262,30 +258,25 @@ public class CardFormActivity extends Activity {
 		((Button)this.findViewById(R.id.add_images)).setText("Change Images");
 		ViewGroup tableRow = (ViewGroup) this.findViewById(R.id.create_card_gallary_row);
 		tableRow.setVisibility(View.VISIBLE);
-		final ArrayList<Photo> galleryItems = new ArrayList<Photo>();
-		for(File img: imageFiles){
-			galleryItems.add(new Photo(galleryItems.size(), img.getAbsolutePath(), 0));
-		}
+		final ArrayList<File> galleryItems = imageFiles;
 		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
 		gallery.setOnItemClickListener(new OnItemClickListener(){
 			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				Photo myPhoto = galleryItems.get(position);
 				Intent intent = new Intent();
 				intent.setAction(android.content.Intent.ACTION_VIEW); 
-				Log.d(TAG,"new: "+myPhoto.filename);
-				intent.setDataAndType(Uri.fromFile(new File(myPhoto.filename)),"image/*");
+				intent.setDataAndType(Uri.fromFile(galleryItems.get(position)),"image/*");
 				startActivity(intent);
 			}
 		});
 		gallery.setAdapter(new BaseAdapter(){
 			@Override public int getCount() { return galleryItems.size();}
 			@Override public Object getItem(int position) {return galleryItems.get(position);}
-			@Override public long getItemId(int position) {return galleryItems.get(position).id;}
+			@Override public long getItemId(int position) {return Long.valueOf(position);}
 			@Override public View getView(int position, View convertView, ViewGroup parent) {
-				final Photo myPhoto = galleryItems.get(position);
+				final File myPhoto = galleryItems.get(position);
 				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
 				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-				ImageLoader.getInstance().displayImage("file://"+myPhoto.filename, myImage,new ImageLoadingListener(){
+				ImageLoader.getInstance().displayImage(Uri.fromFile(myPhoto).toString(), myImage,new ImageLoadingListener(){
 					@Override public void onLoadingStarted(String imageUri, View view) {}
 					@Override public void onLoadingCancelled(String imageUri, View view) {}
 					@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {}
