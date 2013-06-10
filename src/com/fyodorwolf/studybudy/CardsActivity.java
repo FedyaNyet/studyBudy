@@ -1,6 +1,7 @@
 package com.fyodorwolf.studybudy;
 
 import java.io.File;
+import java.util.Collections;
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
 import com.fyodorwolf.studybudy.db.QueryRunner;
@@ -499,14 +500,12 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 					myCard = new Card(cardId,cardQuestion,cardAnswer,cardStatus,cardPosition);
 					myDeckAdapter.addCard(myCard);
 				}
-				if(result.getInt(5) != 0){
-					Integer photoId = result.getInt(5);
-					String photoFileName = result.getString(6);
-					Integer photoOrderNum = result.getInt(7);
-					Photo newPhoto = new Photo(photoId,photoFileName,photoOrderNum);
-					myCard.photos.add(newPhoto);
-//					Log.d(TAG, Long.toString(cardId)+"	"+Long.toString(photoId)+"	"+photoFileName);
+				
+				File[] photoFiles = (new File(getApplicationContext().getFilesDir()+"/"+cardId+"/")).listFiles();
+				if(photoFiles != null){
+					Collections.addAll(myCard.photos, photoFiles);
 				}
+				
 			}
 			setViewForCard(myDeckAdapter.getCurrentCard());
 	    	
@@ -563,8 +562,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     		gallery.setOnItemClickListener(new OnItemClickListener(){
     			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
     				Log.d(TAG, "clicked");
-    				Photo myPhoto = card.photos.get(position);
-    				File photoFile = new File(myPhoto.filename);
+    				File photoFile = card.photos.get(position);
     				Log.d(TAG,"exists: "+ photoFile.exists()+" file:"+photoFile.getAbsolutePath());
     				Intent intent = new Intent(Intent.ACTION_VIEW);
     				intent.setDataAndType(Uri.fromFile(photoFile),"image/*");
@@ -575,13 +573,13 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     		gallery.setAdapter(new BaseAdapter(){
     			@Override public int getCount() { return card.photos.size();}
     			@Override public Object getItem(int position) {return card.photos.get(position);}
-    			@Override public long getItemId(int position) {return card.photos.get(position).id;}
+    			@Override public long getItemId(int position) {return Long.valueOf(position);}
     			@Override public View getView(int position, View convertView, ViewGroup parent) {
-    				final Photo myPhoto = card.photos.get(position);
+    				final File myPhoto = card.photos.get(position);
     				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
     				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-    				Log.d(TAG,"exists: "+ new File(myPhoto.filename).exists()+" "+Uri.fromFile(new File(myPhoto.filename)).toString());
-    				ImageLoader.getInstance().displayImage(Uri.fromFile(new File(myPhoto.filename)).toString(), myImage,new SimpleImageLoadingListener(){
+//    				Log.d(TAG,"exists: "+ new File(myPhoto.filename).exists()+" "+Uri.fromFile(new File(myPhoto.filename)).toString());
+    				ImageLoader.getInstance().displayImage(Uri.fromFile(myPhoto).toString(), myImage,new SimpleImageLoadingListener(){
     					@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
     						((ImageView)view).setImageBitmap(loadedImage);
     					}

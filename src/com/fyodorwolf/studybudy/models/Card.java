@@ -1,5 +1,6 @@
 package com.fyodorwolf.studybudy.models;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import android.util.SparseIntArray;
@@ -14,7 +15,7 @@ public class Card{
 	public static final int STATUS_WRONG = 2;
 	
 	public SparseIntArray statusResources = new SparseIntArray();
-	public ArrayList<Photo> photos = new ArrayList<Photo>();
+	public ArrayList<File> photos = new ArrayList<File>();
 	
 	public long id;
 	public String question;
