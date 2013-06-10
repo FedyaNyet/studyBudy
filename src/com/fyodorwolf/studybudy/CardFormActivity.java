@@ -96,7 +96,12 @@ public class CardFormActivity extends Activity {
 			switch(requestCode) { 
 			  	case (IMAGE_REQUEST_CODE):
 			  	default:
-					deleteCardPhotos(cardId);
+			  		if(cardId > 0){
+			  			File photosDir = new File(getApplicationContext().getFilesDir()+"/"+cardId+"/");
+						SBApplication.removeFiles(photosDir);
+			  		}
+					imageFiles.clear();
+					hideImageGallery();
 					//set the gallery with the images we got from our image select intent.
 					imagePaths = data.getStringArrayExtra("com.fyodorwolf.studyBudy.imageStrings");
 					if(imagePaths.length>0){
@@ -202,10 +207,10 @@ public class CardFormActivity extends Activity {
 					//MOVE ALL IMAGES TO CARD DIRECTORY
 					if(imageFiles.size()>0){
 						String newFilePath = getApplicationContext().getFilesDir()+"/"+cardId+"/";
-						for(int idx = 0; idx<imageFiles.size(); idx++){
-							File imageFile = imageFiles.get(idx);
-							String imageFileExt = imageFile.getName().substring(imageFile.getName().lastIndexOf("."));
-							File newImageFile = new File(newFilePath + idx + imageFileExt);
+						for(File imageFile : imageFiles){
+							String imageFileExt = imageFile.getName().substring(imageFile.getName().lastIndexOf(".")); //contains leading '.'
+							String newFileName = Long.toString(System.currentTimeMillis())+imageFileExt;
+							File newImageFile = new File(newFilePath + newFileName + imageFileExt);
 							try{
 								SBApplication.copy(imageFile,newImageFile);
 								Log.d(TAG, "copied: "+newImageFile.getAbsolutePath());
@@ -229,28 +234,6 @@ public class CardFormActivity extends Activity {
 				new QueryRunner(myDb,handlePhotoesCallback).execute(QueryString.getUpdateCardQuery(cardId, question_text, answer_text));
 			}
 		}
-	}
-
-	private void deleteCardPhotos(long cardId){
-  		if(cardId > 0){
-  			new QueryRunner(myDb, new QueryRunnerListener(){
-				@Override public void onPostExcecute(Cursor cursor) {
-					if(cursor.getCount() > 0){
-						//remove all traces of existing card photos
-						final String[] existingPhotoFiles = new String[cursor.getCount()];
-						cursor.moveToPosition(-1);
-						while(cursor.moveToNext()){
-							String filename = cursor.getString(3);
-							existingPhotoFiles[cursor.getPosition()] = filename;
-						}
-						SBApplication.removeFiles(new HashSet<String>(Arrays.asList(existingPhotoFiles)));
-						new QueryRunner(myDb).execute(QueryString.getDeletePhotosWithFilenamesQuery(existingPhotoFiles));
-					}
-				}
-			}).execute(QueryString.getCardWithPhotosQuery(cardId));
-  		}
-		imageFiles.clear();
-		hideImageGallery();
 	}
 	
 	private void setCardFormData(final long cardId) {
