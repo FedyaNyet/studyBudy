@@ -38,16 +38,15 @@ public class QueryString {
 	}
 
 	public static String getDeleteCardQuery(long cardId){
-		long[] ids = {cardId};
-		return getDeleteCardsQuery(ids);
+		return getDeleteCardsQuery(new long[]{cardId});
 	}
 
 	public static String getDeleteCardsQuery(long[] cardIds) {
-		return "DELETE FROM Card WHERE _id IN ("+ StringUtils.join(cardIds,",")+")";
+		return "DELETE FROM Card WHERE _id IN ("+ StringUtils.join(ArrayUtils.toObject(cardIds),",")+")";
 	}
 
 	public static String getCardsWithIdsQuery(long[] cardIds) {
-		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WHERE c._id IN ("+StringUtils.join(cardIds,",")+")";
+		return "SELECT c._id, c.question, c.answer, c.status, c.numberInDeck, p._id, p.filename, p.orderNum FROM Card c LEFT OUTER JOIN Photo p on p.cardId = c._id WHERE c._id IN ("+StringUtils.join(ArrayUtils.toObject(cardIds),",")+")";
 	}
 	
 	public static String getCardsWithDeckIdQuery(long DeckId){
@@ -85,7 +84,7 @@ public class QueryString {
 		return 	"SELECT p._id, p.filename, c._id FROM Deck d " +
 				"LEFT OUTER JOIN Card c on c.deckId = d._id " +
 				"LEFT OUTER JOIN Photo p on p.cardId = c._id " +
-				"WHERE d._id IN("+StringUtils.join(deckIds,",")+")";
+				"WHERE d._id IN("+StringUtils.join(ArrayUtils.toObject(deckIds),",")+")";
 	}
 
 	public static String getLastCardIdQuery() {
@@ -141,12 +140,10 @@ public class QueryString {
 	}
 
 	public static String getRemoveDecksWithIdsQuery(long[] deckIds){
-		return "DELETE FROM Deck WHERE _id IN ("+StringUtils.join(deckIds,",")+")";
+		return "DELETE FROM Deck WHERE _id IN ("+StringUtils.join(ArrayUtils.toObject(deckIds),",")+")";
 	}
 	
 	public static String getRemoveEmptySectionsQuery(){
 		return "DELETE FROM Section WHERE _id NOT IN (SELECT DISTINCT(sectionId) from Deck)";
 	}
-	
-	
 }
