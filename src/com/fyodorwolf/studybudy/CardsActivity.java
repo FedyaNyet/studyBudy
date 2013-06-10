@@ -93,8 +93,9 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 
 		long deckId =  getIntent().getExtras().getLong(EXTRAS_DECK_ID);
 		String deckName =  getIntent().getExtras().getString(EXTRAS_DECK_NAME);
-		long[] cardIds =  getIntent().getExtras().getLongArray(EXTRAS_CARD_IDS);
+		long[] cardIds =  getIntent().getExtras().getLongArray(EXTRAS_CARD_IDS); //ADDED WHEN SEARCH
 		myDeckAdapter = new DeckAdapter(new Deck(deckId,deckName));
+    	myDB = DatabaseAdapter.getInstance();
 		
         setTitle(deckName);
         
@@ -126,18 +127,15 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 		});
         
         /* SET CARD DATA */
-    	myDB = DatabaseAdapter.getInstance();
-    	QueryRunner query = new QueryRunner(myDB);
-    	query.setQueryRunnerListener(new QueryRunnerListener(){
-			@Override public void onPostExcecute(Cursor cards) {
-				buildDeck(cards);
-			}
-        });
     	String getCardQuery = QueryString.getCardsWithDeckIdQuery(deckId);
     	if(cardIds != null){
     		getCardQuery = QueryString.getCardsWithIdsQuery(cardIds);
     	}
-    	query.execute(getCardQuery);
+    	new QueryRunner(myDB, new QueryRunnerListener(){
+			@Override public void onPostExcecute(Cursor cards) {
+				buildDeck(cards);
+			}
+        }).execute(getCardQuery);
 
 		/* DEFINE GESTURES */
         gestureDetector = new GestureDetector(this, new SimpleOnGestureListener(){
@@ -561,12 +559,14 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     		}
     		gallery.setOnItemClickListener(new OnItemClickListener(){
     			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    				Log.d(TAG, "clicked");
     				File photoFile = card.photos.get(position);
-    				Log.d(TAG,"exists: "+ photoFile.exists()+" file:"+photoFile.getAbsolutePath());
+    				Log.d(TAG,"exists: "+ photoFile.exists()+" "+Uri.fromFile(photoFile).toString());
     				Intent intent = new Intent(Intent.ACTION_VIEW);
     				intent.setDataAndType(Uri.fromFile(photoFile),"image/*");
-    				intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+    				intent.setFlags(
+						Intent.FLAG_GRANT_READ_URI_PERMISSION|
+						Intent.FLAG_GRANT_WRITE_URI_PERMISSION|
+						Intent.FLAG_ACTIVITY_NEW_TASK);
     				startActivity(intent);
     			}
     		});
