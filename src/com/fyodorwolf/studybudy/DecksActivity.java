@@ -1,8 +1,8 @@
 package com.fyodorwolf.studybudy;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import com.fyodorwolf.studybudy.db.DatabaseAdapter;
 import com.fyodorwolf.studybudy.db.QueryRunner;
@@ -12,7 +12,6 @@ import com.fyodorwolf.studybudy.models.*;
 
 import android.app.AlertDialog;
 import android.app.ExpandableListActivity;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -169,41 +168,8 @@ public class DecksActivity extends ExpandableListActivity{
     	_listView.requestFocus();
         super.onStart();
     }
-    
-	private static void deleteAssociationsForDeckIds(Context context, long[] deckIds) {
-		final DatabaseAdapter myDB = DatabaseAdapter.getInstance();
-		//get all deck photo files.
-	   	new QueryRunner(myDB, new QueryRunnerListener(){
-			@Override public void onPostExcecute(Cursor cursor) {
-				if(cursor.getCount()>0){
-					int size = cursor.getCount();
-					long[] cardIds = new long[size];
-					String[] photoFilenames = new String[size];
-					HashSet<String> photoPathsInDB = new HashSet<String>();
-					cursor.moveToPosition(-1);
-					while(cursor.moveToNext()){
-						String filename = cursor.getString(1);
-						long cardId = cursor.getLong(2);
-						cardIds[cursor.getPosition()] = cardId;
-						photoFilenames[cursor.getPosition()] = filename;
-						photoPathsInDB.add(filename);
-					}
-					
-					/*DELETE PHOTO IN PHOTOIDS[]*/
-					new QueryRunner(myDB)
-						.execute(QueryString.getDeletePhotosWithFilenamesQuery(photoFilenames));
-					
-					/*DELETE CARD IN CARDIDS[]*/
-					new QueryRunner(myDB).execute(QueryString.getDeleteCardsQuery(cardIds));
-
-					/*DELETE FILES THAT DON'T HAVE DB ENTRIES*/
-					SBApplication.removeFiles(photoPathsInDB);
-				}
-				
-			}
-	   	}).execute(QueryString.getCardsWithPhotosForDecksQuery(deckIds));
-	}
-
+	
+	
     private void gotSections(Cursor result) {
     	_sections = new ArrayList<Section>();
     	_sectionIdMap = new HashMap<Long,Section>();
@@ -330,18 +296,34 @@ public class DecksActivity extends ExpandableListActivity{
     }
     
 	private AlertDialog deleteDecks() {
-    	AlertDialog myDeleteConfirmationBox = new AlertDialog.Builder(this) 
+    	return new AlertDialog.Builder(this) 
     	//set message, title, and icon
     		.setTitle("Delete Card") 
     		.setMessage("Are you sure you want to delete these decks?") 
     		.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
     			public void onClick(DialogInterface dialog, int whichButton) { 
+    				
     				long[] deckIds = _listView.getCheckedItemIds();
     				
-    				/*DELETE THE PHOTOS, CARDS AND FILES OF THIS DECK*/
-    				DecksActivity.deleteAssociationsForDeckIds(DecksActivity.this,deckIds);
+    				/*CARDS AND FILES OF THIS DECK*/
+    			   	new QueryRunner(_myDB, new QueryRunnerListener(){
+    					@Override public void onPostExcecute(Cursor cursor) {
+    						if(cursor.getCount()>0){
+    							cursor.moveToPosition(-1);
+    							long[] cardIds = new long[cursor.getCount()];
+    							while(cursor.moveToNext()){
+    								long cardId = cursor.getLong(2);
+    								cardIds[cursor.getPosition()] = cardId;
+    								File cardDir = new File(getApplicationContext().getFilesDir()+"/"+cardId+"/");
+    								SBApplication.removeFiles(cardDir);
+    							}
+    							/*DELETE CARDS*/
+    							new QueryRunner(_myDB).execute(QueryString.getDeleteCardsQuery(cardIds));
+    						}
+    					}
+    			   	}).execute(QueryString.getCardsWithPhotosForDecksQuery(deckIds));
     				
-    				/*DELETE ACTUAL DECK*/
+    				/*DELETE DECK ITSELF*/
     				new QueryRunner(_myDB, new QueryRunnerListener(){
     					@Override public void onPostExcecute(Cursor cursor) {
     						QueryRunner deleteEmptySections = new QueryRunner(_myDB);
@@ -365,7 +347,6 @@ public class DecksActivity extends ExpandableListActivity{
 				}
 			})
 			.create();
-    	return myDeleteConfirmationBox;
    }
 	
     private void runCreateDeckActivity(long deckId) {
