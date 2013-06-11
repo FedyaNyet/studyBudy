@@ -565,8 +565,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     				intent.setDataAndType(Uri.fromFile(photoFile),"image/*");
     				intent.setFlags(
 						Intent.FLAG_GRANT_READ_URI_PERMISSION|
-						Intent.FLAG_GRANT_WRITE_URI_PERMISSION|
-						Intent.FLAG_ACTIVITY_NEW_TASK);
+						Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
     				startActivity(intent);
     			}
     		});
