@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Environment;
 import android.util.Log;
 
 public class SBApplication extends Application {
@@ -32,6 +33,7 @@ public class SBApplication extends Application {
 		try {
 			Log.d(TAG, "deleteing files from: "+directory.getAbsolutePath());
 			FileUtils.deleteDirectory(directory);
+			Log.d(TAG, "deleted files Successfully");
 		} catch (IOException e) {
 			Log.e(TAG,e.getMessage());
 		}
@@ -52,5 +54,14 @@ public class SBApplication extends Application {
 
     public static Context getAppContext() {
         return SBApplication.context;
+    }
+    
+    public static String getImageFolderPath(long cardId){
+		//DEFINE CARD's FOLDER PATH
+		String sdPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+		String ds = File.separator;
+		String cardImagePath = sdPath + ds + "com.fyodorwolf.studybudy" + ds + cardId + ds;
+		return cardImagePath;
+    	
     }
 }

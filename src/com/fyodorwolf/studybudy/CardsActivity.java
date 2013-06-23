@@ -12,37 +12,28 @@ import com.fyodorwolf.studybudy.helpers.ViewFlipper;
 import com.fyodorwolf.studybudy.helpers.ViewFlipper.ViewSwapperListener;
 import com.fyodorwolf.studybudy.models.*;
 import com.fyodorwolf.studybudy.ui.HorizontalListView;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
 import android.support.v4.view.ViewPager;
 
 public class CardsActivity extends Activity implements ViewPager.PageTransformer {
@@ -108,21 +99,19 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
         findViewById(R.id.button_correct).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v) {
 				//setCard Correct
-				QueryRunner setStatusQuery = new QueryRunner(myDB);
-				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
 				long card_id = myDeckAdapter.getCurrentCard().id;
 				myDeckAdapter.setCardStatus(card_id, Card.STATUS_CORRECT);
-				setStatusQuery.execute(QueryString.getCardUpdateStatusQuery(card_id,Card.STATUS_CORRECT));
+				new QueryRunner(myDB,setStatusQueryListener)
+					.execute(QueryString.getCardUpdateStatusQuery(card_id,Card.STATUS_CORRECT));
 			}
 		});
         findViewById(R.id.button_wrong).setOnClickListener(new OnClickListener(){
 			@Override public void onClick(View v) {
 				//setCard incorrect
-				QueryRunner setStatusQuery = new QueryRunner(myDB);
-				setStatusQuery.setQueryRunnerListener(setStatusQueryListener);
 				long card_id = myDeckAdapter.getIdOfCardAtIndex(myDeckAdapter.stackIndex);
 				myDeckAdapter.setCardStatus(card_id, Card.STATUS_WRONG);
-				setStatusQuery.execute(QueryString.getCardUpdateStatusQuery(card_id,Card.STATUS_WRONG));
+				new QueryRunner(myDB,setStatusQueryListener)
+					.execute(QueryString.getCardUpdateStatusQuery(card_id,Card.STATUS_WRONG));
 			}
 		});
         
@@ -499,7 +488,9 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
 					myDeckAdapter.addCard(myCard);
 				}
 				
-				File[] photoFiles = (new File(getApplicationContext().getFilesDir()+"/"+cardId+"/")).listFiles();
+				String cardPhotosPath = SBApplication.getImageFolderPath(cardId);
+				
+				File[] photoFiles = (new File(cardPhotosPath)).listFiles();
 				if(photoFiles != null){
 					Collections.addAll(myCard.photos, photoFiles);
 				}
@@ -553,39 +544,7 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
     	tableRow.setVisibility(View.GONE);
     	if(card.photos.size()>0){
     		tableRow.setVisibility(View.VISIBLE);
-    		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
-    		for(File photo : new File(getApplicationContext().getFilesDir()+"/").listFiles()){
-    			Log.d(TAG,"photo:" + photo.getAbsolutePath());
-    		}
-    		gallery.setOnItemClickListener(new OnItemClickListener(){
-    			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    				File photoFile = card.photos.get(position);
-    				Log.d(TAG,"exists: "+ photoFile.exists()+" "+Uri.fromFile(photoFile).toString());
-    				Intent intent = new Intent(Intent.ACTION_VIEW);
-    				intent.setDataAndType(Uri.fromFile(photoFile),"image/*");
-    				intent.setFlags(
-						Intent.FLAG_GRANT_READ_URI_PERMISSION|
-						Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-    				startActivity(intent);
-    			}
-    		});
-    		gallery.setAdapter(new BaseAdapter(){
-    			@Override public int getCount() { return card.photos.size();}
-    			@Override public Object getItem(int position) {return card.photos.get(position);}
-    			@Override public long getItemId(int position) {return Long.valueOf(position);}
-    			@Override public View getView(int position, View convertView, ViewGroup parent) {
-    				final File myPhoto = card.photos.get(position);
-    				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
-    				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-//    				Log.d(TAG,"exists: "+ new File(myPhoto.filename).exists()+" "+Uri.fromFile(new File(myPhoto.filename)).toString());
-    				ImageLoader.getInstance().displayImage(Uri.fromFile(myPhoto).toString(), myImage,new SimpleImageLoadingListener(){
-    					@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-    						((ImageView)view).setImageBitmap(loadedImage);
-    					}
-    				});
-    				return myImage;
-    			}
-    		});
+    		((HorizontalListView) findViewById(R.id.photo_list_view)).setGalleryItems(card.photos, this);
     	}
 	}
 
@@ -618,4 +577,9 @@ public class CardsActivity extends Activity implements ViewPager.PageTransformer
            .create();
        return myDeleteConfirmationBox;
 	}
+	
+	public static int min(int a, int b){
+		return a<b?a:b;
+	}
+	
 }

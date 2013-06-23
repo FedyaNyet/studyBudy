@@ -16,9 +16,9 @@ import com.fyodorwolf.studybudy.models.Deck;
  */
 public class DeckAdapter{
 	
-	public static final int STACK_NOT_ANSWERED = Card.STATUS_NONE;
-	public static final int STACK_CORRECT = Card.STATUS_CORRECT;
-	public static final int STACK_WRONG = Card.STATUS_WRONG;
+	public static final int STACK_NOT_ANSWERED = Card.STATUS_NONE;//0
+	public static final int STACK_CORRECT = Card.STATUS_CORRECT;//1
+	public static final int STACK_WRONG = Card.STATUS_WRONG;//3
 	public static final int STACK_ALL = 3;
 	
 	public int currentStack;

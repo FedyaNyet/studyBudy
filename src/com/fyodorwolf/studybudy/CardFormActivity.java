@@ -9,9 +9,6 @@ import com.fyodorwolf.studybudy.db.QueryRunner;
 import com.fyodorwolf.studybudy.db.QueryString;
 import com.fyodorwolf.studybudy.db.QueryRunner.QueryRunnerListener;
 import com.fyodorwolf.studybudy.ui.HorizontalListView;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.assist.FailReason;
-import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -19,21 +16,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 public class CardFormActivity extends Activity {
@@ -56,6 +45,8 @@ public class CardFormActivity extends Activity {
 	private DatabaseAdapter myDb;
 
 	@Override protected void onCreate(Bundle savedInstanceState){
+		
+		
         super.onCreate(savedInstanceState);
 		setContentView(R.layout.card_form);
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
@@ -92,10 +83,6 @@ public class CardFormActivity extends Activity {
 			switch(requestCode) { 
 			  	case (IMAGE_REQUEST_CODE):
 			  	default:
-			  		if(cardId > 0){
-			  			File photosDir = new File(getApplicationContext().getFilesDir()+"/"+cardId+"/");
-						SBApplication.removeFiles(photosDir);
-			  		}
 					imageFiles.clear();
 					hideImageGallery();
 					//set the gallery with the images we got from our image select intent.
@@ -200,15 +187,20 @@ public class CardFormActivity extends Activity {
 			final QueryRunnerListener handlePhotoesCallback = new QueryRunnerListener(){
 				@Override public void onPostExcecute(Cursor cursor){
 					if(cursor.getCount()>0){
-						//JUST CREATED THE CARD.
+						//CARD JUST CREATED.
 						cardId = cursor.getLong(0);
 					}
+					
+					String cardPhotosPath = SBApplication.getImageFolderPath(cardId);
+					
+					//REMOVE OLD PHOTOS
+					SBApplication.removeFiles(new File(cardPhotosPath));
+		  			
 					//MOVE ALL IMAGES TO CARD DIRECTORY
 					if(imageFiles.size()>0){
-						String newFilePath = getApplicationContext().getFilesDir()+"/"+cardId+"/";
 						for(File imageFile : imageFiles){
 							String newFileName = Long.toString(System.currentTimeMillis());
-							File newImageFile = new File(newFilePath + newFileName);
+							File newImageFile = new File(cardPhotosPath + newFileName);
 							try{
 								SBApplication.copy(imageFile,newImageFile);
 								Log.d(TAG, "copied: "+newImageFile.getAbsolutePath());
@@ -245,7 +237,10 @@ public class CardFormActivity extends Activity {
 				question.setText(questionText);
 				answer.setText(answerText);
 				imageFiles.clear();
-				File[] photoes = (new File(getApplicationContext().getFilesDir()+"/"+cardId+"/")).listFiles();
+
+				String cardPhotosPath =  SBApplication.getImageFolderPath(cardId);
+				
+				File[] photoes = (new File(cardPhotosPath)).listFiles();
 				if(photoes != null){
 					Collections.addAll(imageFiles, photoes);
 					if(imageFiles.size() > 0){
@@ -258,37 +253,8 @@ public class CardFormActivity extends Activity {
 
 	private void showCardGallery() {
 		((Button)this.findViewById(R.id.add_images)).setText("Change Images");
-		ViewGroup tableRow = (ViewGroup) this.findViewById(R.id.create_card_gallary_row);
-		tableRow.setVisibility(View.VISIBLE);
-		final ArrayList<File> galleryItems = imageFiles;
-		final HorizontalListView gallery = (HorizontalListView) findViewById(R.id.photo_list_view);
-		gallery.setOnItemClickListener(new OnItemClickListener(){
-			@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				Intent intent = new Intent();
-				intent.setAction(android.content.Intent.ACTION_VIEW); 
-				intent.setDataAndType(Uri.fromFile(galleryItems.get(position)),"image/*");
-				startActivity(intent);
-			}
-		});
-		gallery.setAdapter(new BaseAdapter(){
-			@Override public int getCount() { return galleryItems.size();}
-			@Override public Object getItem(int position) {return galleryItems.get(position);}
-			@Override public long getItemId(int position) {return Long.valueOf(position);}
-			@Override public View getView(int position, View convertView, ViewGroup parent) {
-				final File myPhoto = galleryItems.get(position);
-				View layout = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item,null);
-				ImageView myImage = (ImageView) layout.findViewById(R.id.galley_photo_item);
-				ImageLoader.getInstance().displayImage(Uri.fromFile(myPhoto).toString(), myImage,new ImageLoadingListener(){
-					@Override public void onLoadingStarted(String imageUri, View view) {}
-					@Override public void onLoadingCancelled(String imageUri, View view) {}
-					@Override public void onLoadingFailed(String imageUri, View view, FailReason failReason) {}
-					@Override public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-						((ImageView)view).setImageBitmap(loadedImage);
-					}
-				});
-				return myImage;
-			}
-		});
+		findViewById(R.id.create_card_gallary_row).setVisibility(View.VISIBLE);
+		((HorizontalListView) findViewById(R.id.photo_list_view)).setGalleryItems(imageFiles,this);
 	}
 
 	private void hideImageGallery() {
