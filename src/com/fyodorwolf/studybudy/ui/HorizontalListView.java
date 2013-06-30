@@ -191,8 +191,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 			int right, int bottom) {
 		super.onLayout(changed, left, top, right, bottom);
 
-		//log.d(TAG, changed + "," + top + "," + right + "," + bottom + ","
-				+ left);
+		//log.d(TAG, changed + "," + top + "," + right + "," + bottom + "," + left);
 
 		if (mAdapter == null) {
 			return;
@@ -259,8 +258,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 				//log.d(TAG, "rE:" + childEdge);
 				if (mRightViewIndex == mAdapter.getCount() - 1) {
 					mMaxX = getWidth() - mCurrentX - childEdge;
-					//log.d(TAG, mMaxX + " = " + mCurrentX + " + " + childEdge
-							+ " - " + getWidth());
+					//log.d(TAG, mMaxX + " = " + mCurrentX + " + " + childEdge + " - " + getWidth());
 				}
 				mRightViewIndex++;
 			}
